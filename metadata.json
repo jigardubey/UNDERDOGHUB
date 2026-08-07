@@ -1,0 +1,6 @@
+{
+  "name": "UNDERDOG HUB",
+  "description": "Free Fire esports tournament discovery platform and personal match schedule manager.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

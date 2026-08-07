@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "users": {
+      "title": "User",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["guest", "user", "organizer", "verified_organizer", "admin"] },
+        "inGameId": { "type": "string" },
+        "squadName": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "name"]
+    },
+    "tournaments": {
+      "title": "Tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "organizer": { "type": "string" },
+        "organizerUid": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "bannerUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "startDate": { "type": "string" },
+        "startTime": { "type": "string" },
+        "prizePool": { "type": "string" },
+        "entryFee": { "type": "string" },
+        "registrationUrl": { "type": "string" },
+        "matchFormat": { "type": "string" },
+        "description": { "type": "string" },
+        "rules": { "type": "array" },
+        "slotsTotal": { "type": "number" },
+        "slotsFilled": { "type": "number" },
+        "featured": { "type": "boolean" },
+        "isPendingApproval": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "organizer", "status", "matchFormat"]
+    },
+    "verificationRequests": {
+      "title": "Verification Request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "applicantUid": { "type": "string" },
+        "organizerName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "socialLinks": { "type": "string" },
+        "experience": { "type": "string" },
+        "reason": { "type": "string" },
+        "feePaid": { "type": "number" },
+        "paymentStatus": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["organizerName", "email", "phone"]
+    },
+    "userUserData": {
+      "title": "User Saved Tournaments & Custom Matches",
+      "type": "object",
+      "properties": {
+        "savedIds": { "type": "array" },
+        "customMatches": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "settings": {
+      "title": "Global System Settings",
+      "type": "object",
+      "properties": {
+        "verificationFee": { "type": "number" },
+        "adminPasscode": { "type": "string" }
+      }
+    },
+    "activityLogs": {
+      "title": "System Activity Logs",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "userUid": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  }
+}
