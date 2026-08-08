@@ -52,16 +52,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   if (user.role === 'admin' && isAdminAuthenticated) {
     navItems.push({ id: 'admin', label: 'Admin Panel', badge: 0 });
-  } else {
-    navItems.push({ id: 'admin-passcode', label: 'Private Admin', badge: 0 });
   }
 
   const handleNavClick = (id: string) => {
-    if (id === 'admin-passcode') {
-      handleAdminButtonClick();
-    } else {
-      setActiveTab(id);
-    }
+    setActiveTab(id);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -122,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right Action Bar for Tablet/Desktop */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             
             {/* Quick Mode Switcher for Private Admin */}
             <button
