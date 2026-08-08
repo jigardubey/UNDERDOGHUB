@@ -74,17 +74,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logo */}
           <div 
             onClick={() => handleNavClick('home')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
           >
-            <div className="w-8 h-8 bg-[#FF7A00] rounded-lg flex items-center justify-center font-black text-black italic text-xl shadow-md shadow-[#FF7A00]/20 group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 bg-[#FF7A00] rounded-lg flex items-center justify-center font-black text-black italic text-lg sm:text-xl shadow-md shadow-[#FF7A00]/20 group-hover:scale-105 transition-transform shrink-0">
               U
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-black tracking-tighter text-xl text-white italic">UNDERDOG</span>
-                <span className="font-black text-xl text-[#FF7A00] italic">HUB</span>
+              <div className="flex items-center gap-1">
+                <span className="font-black tracking-tighter text-base sm:text-xl text-white italic">UNDERDOG</span>
+                <span className="font-black text-base sm:text-xl text-[#FF7A00] italic">HUB</span>
               </div>
-              <p className="text-[10px] text-white/40 tracking-wider font-mono uppercase -mt-1">Platform for Free Fire Pros</p>
+              <p className="text-[10px] text-white/40 tracking-wider font-mono uppercase -mt-1 hidden sm:block">Platform for Free Fire Pros</p>
             </div>
           </div>
 
@@ -165,15 +165,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Header Bar Buttons */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-1.5 shrink-0">
             
             {/* Mobile Direct Login / Account Button */}
             <button
               onClick={onOpenAuth}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs transition-all shadow-md ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-black text-xs transition-all shadow-md shrink-0 ${
                 isLoggedIn
                   ? 'bg-[#16161D] text-white border border-white/10'
-                  : 'bg-[#FF7A00] text-black hover:bg-[#FF8A1F] shadow-[#FF7A00]/20 font-black'
+                  : 'bg-[#FF7A00] text-black hover:bg-[#FF8A1F] shadow-[#FF7A00]/20'
               }`}
             >
               <LogIn className="w-3.5 h-3.5" />
@@ -203,42 +203,43 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0B0B0F] border-b border-white/5 px-4 pt-3 pb-6 space-y-2 animate-fadeIn">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-colors ${
-                activeTab === item.id
-                  ? 'bg-[#FF7A00] text-black font-bold'
-                  : 'bg-[#16161D] text-gray-200 hover:bg-white/10'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                {item.id === 'my-tournaments' && <Bookmark className="w-5 h-5" />}
-                {item.id === 'submit' && <PlusCircle className="w-5 h-5" />}
-                {item.id === 'admin' && <ShieldAlert className="w-5 h-5" />}
-                {item.label}
-              </span>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-black text-[#FF7A00]">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="md:hidden bg-[#0B0B0F] border-b border-white/5 px-4 pt-3 pb-6 space-y-3 animate-fadeIn">
+          {/* Prominent Login Button at Top of Drawer */}
+          <button
+            onClick={() => {
+              onOpenAuth();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#FF7A00] text-black font-black text-sm shadow-lg shadow-[#FF7A00]/20"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>{isLoggedIn ? `Logged in: ${user.name}` : 'Login / Create Account'}</span>
+          </button>
 
-          <div className="pt-3 border-t border-white/5">
-            <button
-              onClick={() => {
-                onOpenAuth();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#FF7A00] text-black font-black text-sm shadow-lg shadow-[#FF7A00]/20"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>{isLoggedIn ? `Logged in as ${user.name}` : 'Login / Create Account'}</span>
-            </button>
+          <div className="space-y-1.5 pt-1">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  activeTab === item.id
+                    ? 'bg-[#FF7A00] text-black font-bold'
+                    : 'bg-[#16161D] text-gray-200 hover:bg-white/10'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {item.id === 'my-tournaments' && <Bookmark className="w-4 h-4" />}
+                  {item.id === 'submit' && <PlusCircle className="w-4 h-4" />}
+                  {item.id === 'admin' && <ShieldAlert className="w-4 h-4" />}
+                  {item.label}
+                </span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-black text-[#FF7A00]">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       )}
