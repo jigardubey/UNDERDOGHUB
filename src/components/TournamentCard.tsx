@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tournament } from '../types';
-import { CheckCircle2, Calendar, Clock, Trophy, Ticket, Bookmark, ExternalLink, Users, Shield } from 'lucide-react';
+import { Trophy, CheckCircle2, Bookmark, ExternalLink, ShieldCheck, Crown } from 'lucide-react';
 import { DEFAULT_UNDERDOG_BANNER } from '../lib/constants';
 
 interface TournamentCardProps {
@@ -16,148 +16,160 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
   onToggleSave,
   onViewDetails
 }) => {
-  const getStatusBadge = () => {
-    switch (tournament.status) {
-      case 'live':
-        return (
-          <div className="flex gap-1.5 items-center">
-            <span className="px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded flex items-center gap-1 uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              LIVE
-            </span>
-            {tournament.isVerified && (
-              <span 
-                title="Verified Organizer"
-                className="px-2 py-1 bg-[#FF7A00] text-black text-[10px] font-black rounded uppercase flex items-center gap-1 cursor-help"
-              >
-                <CheckCircle2 className="w-3 h-3 stroke-[3]" />
-                VERIFIED
-              </span>
-            )}
-          </div>
-        );
-      case 'upcoming':
-        return (
-          <div className="flex gap-1.5 items-center">
-            <span className="px-2 py-1 bg-white/10 text-white/90 text-[10px] font-black rounded uppercase">
-              UPCOMING
-            </span>
-            {tournament.isVerified && (
-              <span 
-                title="Verified Organizer"
-                className="px-2 py-1 bg-[#FF7A00] text-black text-[10px] font-black rounded uppercase flex items-center gap-1 cursor-help"
-              >
-                <CheckCircle2 className="w-3 h-3 stroke-[3]" />
-                VERIFIED
-              </span>
-            )}
-          </div>
-        );
-      case 'ended':
-        return (
-          <span className="px-2 py-1 bg-white/5 text-white/40 text-[10px] font-black rounded uppercase">
-            ENDED
-          </span>
-        );
-    }
-  };
+  // Format metadata line
+  const modeText = tournament.matchFormat.includes('Squad')
+    ? 'Squad'
+    : tournament.matchFormat.includes('Duo')
+    ? 'Duo'
+    : 'Solo';
+
+  const gameName = tournament.gameVersion || 'Free Fire Max';
 
   return (
-    <div className="bg-[#16161D] border border-white/5 rounded-xl overflow-hidden group hover:border-[#FF7A00]/40 transition-all flex flex-col justify-between">
-      
-      {/* Banner & Top Overlay */}
-      <div className="h-36 bg-[#25252D] relative overflow-hidden">
-        <img
-          src={tournament.bannerUrl}
-          alt={tournament.name}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          onError={(e) => {
-            e.currentTarget.src = DEFAULT_UNDERDOG_BANNER;
-          }}
-        />
+    <div 
+      onClick={() => onViewDetails(tournament)}
+      className="bg-[#12141D] hover:bg-[#161824] border border-white/10 hover:border-[#3B82F6]/50 rounded-2xl p-3.5 sm:p-4 transition-all duration-300 shadow-lg cursor-pointer group flex flex-col justify-between space-y-3"
+    >
+      {/* Top Split Layout: Left Details vs Right Image Poster */}
+      <div className="flex items-start justify-between gap-3">
         
-        {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#16161D] via-[#16161D]/40 to-transparent" />
+        {/* Left Content Column */}
+        <div className="flex-1 space-y-2 min-w-0">
+          
+          {/* Top Row: Prize Badge & Save Bookmark */}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#2563EB] text-white font-extrabold text-xs shadow-md shadow-blue-600/30">
+              <Trophy className="w-3.5 h-3.5 fill-white text-[#2563EB]" />
+              <span>{tournament.prizePool || 'TBD'}</span>
+            </span>
 
-        {/* Status Badges Top Left */}
-        <div className="absolute top-3 left-3 z-10">
-          {getStatusBadge()}
+            {tournament.isVerified && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold border border-amber-500/20 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-amber-400" />
+                <span>Verified</span>
+              </span>
+            )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSave(tournament.id);
+              }}
+              title={isSaved ? "Saved in schedule" : "Bookmark event"}
+              className={`ml-auto p-1.5 rounded-lg transition-colors ${
+                isSaved ? 'text-[#FF7A00] bg-[#FF7A00]/10' : 'text-gray-400 hover:text-white bg-white/5'
+              }`}
+            >
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-[#FF7A00]' : ''}`} />
+            </button>
+          </div>
+
+          {/* Tournament Title */}
+          <h3 className="font-extrabold text-white text-base sm:text-lg leading-snug tracking-tight uppercase group-hover:text-[#3B82F6] transition-colors truncate">
+            {tournament.name}
+          </h3>
+
+          {/* Organizer Line */}
+          <div className="flex items-center gap-1.5 text-xs text-gray-300">
+            <div className="w-4 h-4 rounded-full bg-[#2563EB]/20 border border-[#2563EB]/40 flex items-center justify-center text-[9px] font-black text-[#60A5FA] shrink-0">
+              {tournament.organizer.charAt(0).toUpperCase()}
+            </div>
+            <span className="font-semibold truncate max-w-[140px] text-gray-300">{tournament.organizer}</span>
+            {tournament.isVerified && (
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6] fill-[#3B82F6]/20 shrink-0" />
+            )}
+          </div>
+
+          {/* Metadata Specs Line */}
+          <div className="flex items-center gap-2 text-[11px] text-gray-400 font-medium">
+            <span>{modeText}</span>
+            <span className="text-gray-600">•</span>
+            <span>{tournament.startDate}</span>
+            <span className="text-gray-600">•</span>
+            <span className="truncate">{gameName}</span>
+          </div>
+
         </div>
 
-        {/* Save/Bookmark Button Top Right */}
+        {/* Right Thumbnail Poster */}
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-[#1A1C28] border border-white/10 shrink-0 relative">
+          <img
+            src={tournament.bannerUrl || DEFAULT_UNDERDOG_BANNER}
+            alt={tournament.name}
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.currentTarget.src = DEFAULT_UNDERDOG_BANNER;
+            }}
+          />
+          {tournament.status === 'live' && (
+            <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-black uppercase flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+              LIVE
+            </span>
+          )}
+        </div>
+
+      </div>
+
+      {/* Bottom Registration Status Strip */}
+      <div className="pt-1 flex items-center gap-2">
+        
+        {/* Status Box */}
+        <div className="flex-1 bg-white text-black px-3 py-1.5 rounded-l-xl rounded-r-sm font-semibold text-xs flex items-center justify-between min-w-0 shadow-inner">
+          <span className="truncate text-[11px] sm:text-xs">
+            {tournament.status === 'live' ? (
+              <span className="text-red-600 font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse inline-block" />
+                Ongoing Match
+              </span>
+            ) : tournament.status === 'ended' ? (
+              <span className="text-gray-600 font-medium">Registration Closed</span>
+            ) : (
+              <span className="text-gray-800">
+                Reg. closes in <strong className="text-red-600">{tournament.registrationCloseDate ? 'soon' : 'open'}</strong>
+              </span>
+            )}
+          </span>
+        </div>
+
+        {/* Action Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleSave(tournament.id);
+            if (tournament.status === 'live' || tournament.status === 'upcoming') {
+              window.open(tournament.registrationUrl, '_blank');
+            } else {
+              onViewDetails(tournament);
+            }
           }}
-          title={isSaved ? "Remove from Schedule" : "Save Event"}
-          className={`absolute top-3 right-3 z-10 p-2 rounded-lg backdrop-blur-md transition-colors ${
-            isSaved
-              ? 'bg-[#FF7A00] text-black shadow-md shadow-[#FF7A00]/30'
-              : 'bg-black/60 text-white hover:bg-black hover:text-[#FF7A00] border border-white/10'
+          className={`px-4 py-1.5 rounded-r-xl rounded-l-sm font-black text-xs transition-all flex items-center gap-1 whitespace-nowrap shadow-md ${
+            tournament.status === 'ended'
+              ? 'bg-[#1E202E] text-gray-300 hover:bg-[#282B3E]'
+              : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-blue-600/20'
           }`}
         >
-          <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-black' : ''}`} />
+          <span>
+            {tournament.status === 'ended'
+              ? 'View Details'
+              : tournament.status === 'live'
+              ? 'Join Match'
+              : 'Register Now'}
+          </span>
         </button>
 
-        {/* Tournament Name & Prize at Bottom of Banner */}
-        <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end gap-2">
-          <span className="text-xs text-white font-bold uppercase truncate max-w-[70%] font-[#Sora]">
-            {tournament.name}
-          </span>
-          <span className="text-[#FF7A00] text-sm font-black italic shrink-0">
-            {tournament.prizePool}
-          </span>
-        </div>
       </div>
 
-      {/* Card Content Body */}
-      <div className="p-4 flex flex-col justify-between space-y-3 flex-1">
-        
-        {/* Organizer & Match Specs */}
-        <div className="flex items-center justify-between text-[10px] text-white/40 font-mono uppercase">
-          <span className="truncate max-w-[170px] flex items-center gap-1">
-            <span>ORG: {tournament.organizer}</span>
-            {tournament.isVerified && (
-              <span title="Verified Organizer" className="inline-flex cursor-help text-[#FF7A00]">
-                <CheckCircle2 className="w-3 h-3 fill-[#FF7A00] text-black" />
-              </span>
-            )}
-          </span>
-          <span>{tournament.matchFormat}</span>
+      {/* Champions Winner Highlight if finished */}
+      {tournament.championName && (
+        <div className="flex items-center gap-1.5 text-xs pt-0.5 font-bold text-amber-400">
+          <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
+          <span>Champions:</span>
+          <span className="text-white font-medium">{tournament.championName}</span>
         </div>
+      )}
 
-        <div className="p-2.5 rounded-lg bg-white/5 border border-white/5 text-[11px] flex items-center justify-between text-white/70">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-[#FF7A00]" />
-            <span>{tournament.startDate} • {tournament.startTime}</span>
-          </div>
-          <span className="font-mono text-[10px] text-white/50">{tournament.slotsFilled}/{tournament.slotsTotal} Squads</span>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 pt-1">
-          <button
-            onClick={() => onViewDetails(tournament)}
-            className="flex-1 py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-colors border border-white/5"
-          >
-            Details
-          </button>
-
-          <a
-            href={tournament.registrationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 py-2 px-3 bg-[#FF7A00] hover:bg-[#FF8A1F] text-black text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors shadow-md shadow-[#FF7A00]/10"
-          >
-            <span>Register</span>
-            <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
-          </a>
-        </div>
-
-      </div>
     </div>
   );
 };
+

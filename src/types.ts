@@ -23,6 +23,12 @@ export interface Tournament {
   featured?: boolean;
   isPendingApproval?: boolean;
   submittedAt?: string;
+  championName?: string;
+  registrationCloseDate?: string;
+  gameVersion?: string;
+  gameMode?: string;
+  location?: string;
+  category?: 'Casual' | 'Esports';
 }
 
 export interface CustomMatch {

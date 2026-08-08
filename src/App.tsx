@@ -34,6 +34,7 @@ import {
 } from './lib/dbServices';
 
 import { Navbar } from './components/Navbar';
+import { BottomNav } from './components/BottomNav';
 import { Hero } from './components/Hero';
 import { TournamentCard } from './components/TournamentCard';
 import { TournamentDirectory } from './components/TournamentDirectory';
@@ -690,6 +691,16 @@ export default function App() {
 
       {/* Toast Notification Queue */}
       <NotificationToast toasts={toasts} onDismiss={removeToast} />
+
+      {/* Floating Bottom Navigation Bar for Mobile / App Views */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        savedCount={savedIds.length + customMatches.length}
+        onOpenAuth={() => setShowAuthModal(true)}
+        isLoggedIn={Boolean(user && user.uid && user.uid !== 'guest' && user.uid !== 'local-guest')}
+        userRole={user.role}
+      />
 
     </div>
   );

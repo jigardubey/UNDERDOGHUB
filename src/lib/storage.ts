@@ -14,12 +14,13 @@ export function getStoredTournaments(): Tournament[] {
   try {
     const raw = localStorage.getItem(TOURNAMENTS_KEY);
     if (!raw) {
-      return [];
+      return INITIAL_TOURNAMENTS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return parsed.length > 0 ? parsed : INITIAL_TOURNAMENTS;
   } catch (e) {
     console.error('Failed to parse stored tournaments:', e);
-    return [];
+    return INITIAL_TOURNAMENTS;
   }
 }
 
