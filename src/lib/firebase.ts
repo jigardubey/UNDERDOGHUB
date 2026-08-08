@@ -26,17 +26,38 @@ import {
   onSnapshot,
   orderBy
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const getEffectiveDatabaseId = (): string | undefined => {
+  const envDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+  if (envDbId && typeof envDbId === 'string' && envDbId.trim() !== '' && envDbId.trim().toLowerCase() !== 'default') {
+    return envDbId.trim();
+  }
+  const appletDbId = firebaseAppletConfig.firestoreDatabaseId;
+  if (appletDbId && typeof appletDbId === 'string' && appletDbId.trim() !== '' && appletDbId.trim().toLowerCase() !== 'default') {
+    return appletDbId.trim();
+  }
+  return undefined;
+};
+
+const databaseId = getEffectiveDatabaseId();
+
+const activeConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
+};
+
+const app = getApps().length === 0 ? initializeApp(activeConfig) : getApp();
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-export const db = firebaseConfig.firestoreDatabaseId 
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 
 export {
   signInWithEmailAndPassword,
