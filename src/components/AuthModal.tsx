@@ -42,7 +42,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Google Sign In Error:', err);
-      setError(err?.message || 'Google sign-in failed. Please try again.');
+      const errStr = String(err?.message || err?.code || '');
+      if (errStr.includes('api-key-not-valid') || err?.code === 'auth/api-key-not-valid') {
+        setError('Firebase API Key error: Please set VITE_FIREBASE_API_KEY in Vercel Environment Variables and add your domain to Firebase Console -> Auth -> Authorized Domains.');
+      } else if (errStr.includes('unauthorized-domain') || err?.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized: Please add your Vercel URL to Firebase Console -> Authentication -> Settings -> Authorized Domains.');
+      } else {
+        setError(err?.message || 'Google sign-in failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -90,10 +97,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.error('Auth Error:', err);
       let msg = 'Authentication failed. Please check your credentials.';
+      const errStr = String(err?.message || err?.code || '');
+
       if (err?.code === 'auth/user-not-found' || err?.code === 'auth/wrong-password' || err?.code === 'auth/invalid-credential') {
         msg = 'Invalid email or password.';
       } else if (err?.code === 'auth/email-already-in-use') {
         msg = 'This email address is already registered. Please login instead.';
+      } else if (errStr.includes('api-key-not-valid') || err?.code === 'auth/api-key-not-valid') {
+        msg = 'Firebase API Key error: If you deployed on Vercel, please add your VITE_FIREBASE_API_KEY in Vercel Environment Variables and add your Vercel domain in Firebase Console -> Auth -> Authorized Domains.';
+      } else if (errStr.includes('unauthorized-domain') || err?.code === 'auth/unauthorized-domain') {
+        msg = 'Unauthorized domain: Please add this domain to Firebase Console -> Authentication -> Settings -> Authorized Domains.';
       } else if (err?.message) {
         msg = err.message;
       }
