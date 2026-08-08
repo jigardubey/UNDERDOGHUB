@@ -49,8 +49,11 @@ export const registerWithEmail = async (
   return result.user;
 };
 
+import { clearStoredUserProfile } from './storage';
+
 export const logoutUser = async (): Promise<void> => {
   await signOut(auth);
+  clearStoredUserProfile();
 };
 
 export const resetPassword = async (email: string): Promise<void> => {

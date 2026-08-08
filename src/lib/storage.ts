@@ -69,6 +69,16 @@ export function saveCustomMatches(matches: CustomMatch[]): void {
   }
 }
 
+export const DEFAULT_GUEST_USER: UserProfile = {
+  id: 'guest',
+  uid: 'guest',
+  name: 'Guest Player',
+  email: 'guest@underdoghub.com',
+  role: 'player',
+  avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=guest',
+  bgmiId: ''
+};
+
 export function getUserProfile(): UserProfile {
   try {
     const raw = localStorage.getItem(USER_PROFILE_KEY);
@@ -76,14 +86,7 @@ export function getUserProfile(): UserProfile {
   } catch {
     // fallback
   }
-  return {
-    id: 'user-default',
-    name: 'Esports Player',
-    email: 'player@underdoghub.com',
-    role: 'player',
-    inGameId: '',
-    squadName: ''
-  };
+  return DEFAULT_GUEST_USER;
 }
 
 export function saveUserProfile(profile: UserProfile): void {
@@ -91,6 +94,14 @@ export function saveUserProfile(profile: UserProfile): void {
     localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
   } catch (e) {
     console.error('Failed to save user profile:', e);
+  }
+}
+
+export function clearStoredUserProfile(): void {
+  try {
+    localStorage.removeItem(USER_PROFILE_KEY);
+  } catch (e) {
+    console.error('Failed to clear user profile:', e);
   }
 }
 

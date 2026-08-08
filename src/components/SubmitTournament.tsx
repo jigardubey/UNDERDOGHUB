@@ -307,15 +307,35 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Total Squad Capacity</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-xs font-semibold text-gray-300">Total Squad / Team Capacity</label>
+              <span className="text-[10px] text-[#FF7A00] font-mono">Up to 10,000 slots</span>
+            </div>
             <input
               type="number"
               min="2"
-              max="100"
+              max="10000"
               value={form.slotsTotal}
               onChange={(e) => setForm({ ...form, slotsTotal: Number(e.target.value) })}
               className="w-full px-4 py-3 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-sm focus:outline-none focus:border-[#FF7A00]"
             />
+            {/* Quick capacity preset buttons */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[48, 100, 250, 500, 1000, 2000].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setForm({ ...form, slotsTotal: count })}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                    form.slotsTotal === count
+                      ? 'bg-[#FF7A00] text-black border-[#FF7A00]'
+                      : 'bg-[#0B0B0F] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {count} Teams
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

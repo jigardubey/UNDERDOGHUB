@@ -70,15 +70,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick('home')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
           >
-            <div className="w-9 h-9 bg-[#2563EB] rounded-xl flex items-center justify-center font-black text-white italic text-xl shadow-lg shadow-blue-600/30 group-hover:scale-105 transition-transform shrink-0">
-              T
+            <div className="w-9 h-9 bg-[#FF7A00] rounded-xl flex items-center justify-center font-black text-black italic text-xl shadow-lg shadow-[#FF7A00]/30 group-hover:scale-105 transition-transform shrink-0">
+              U
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-black tracking-tighter text-lg sm:text-2xl text-white italic">THRYL</span>
-                <span className="font-black text-xs sm:text-sm text-[#3B82F6] italic bg-[#2563EB]/10 px-2 py-0.5 rounded border border-[#2563EB]/30">ESPORTS</span>
+                <span className="font-black tracking-tighter text-lg sm:text-2xl text-white italic">UNDERDOG</span>
+                <span className="font-black text-xs sm:text-sm text-[#FF7A00] italic bg-[#FF7A00]/10 px-2 py-0.5 rounded border border-[#FF7A00]/30">HUB</span>
               </div>
-              <p className="text-[9px] text-gray-400 tracking-wider uppercase font-semibold hidden sm:block">Underdog Esports Platform</p>
+              <p className="text-[9px] text-gray-400 tracking-wider uppercase font-semibold hidden sm:block">Platform for Free Fire Pros</p>
             </div>
           </div>
 

@@ -120,7 +120,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       await logoutUser();
       onShowToast('Logged Out', 'You have been signed out successfully.', 'info');
-      onClose();
+      setMode('login');
     } catch (err: any) {
       onShowToast('Error', 'Failed to log out.', 'error');
     }
@@ -144,7 +144,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const isLoggedIn = currentUser && currentUser.uid !== 'guest' && currentUser.uid !== 'local-guest';
+  const isLoggedIn = currentUser && currentUser.uid !== 'guest' && currentUser.uid !== 'local-guest' && currentUser.id !== 'user-default';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">

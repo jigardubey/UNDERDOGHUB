@@ -9,6 +9,8 @@ import {
   saveCustomMatches,
   getUserProfile,
   saveUserProfile,
+  clearStoredUserProfile,
+  DEFAULT_GUEST_USER,
   getAdminPasscode,
   saveAdminPasscode,
   getVerificationRequests,
@@ -18,6 +20,7 @@ import {
   getPaymentSettings,
   savePaymentSettings
 } from './lib/storage';
+import { INITIAL_TOURNAMENTS } from './data/mockTournaments';
 
 import {
   subscribeToAuthChanges,
@@ -82,17 +85,26 @@ export default function App() {
 
         // Sync user saved tournament schedule from Firestore across all devices
         const unsubSchedule = subscribeToUserSchedule(loggedInUser.uid, (cloudSavedIds) => {
-          if (cloudSavedIds && cloudSavedIds.length > 0) {
-            setSavedIds(cloudSavedIds);
-            saveSavedTournamentIds(cloudSavedIds);
+          if (cloudSavedIds) {
+            setSavedIds((prev) => {
+              const combined = Array.from(new Set([...prev, ...cloudSavedIds]));
+              saveSavedTournamentIds(combined);
+              return combined;
+            });
           }
         });
 
         // Sync user custom matches from Firestore across all devices
         const unsubMatches = subscribeToUserCustomMatches(loggedInUser.uid, (cloudMatches) => {
           if (cloudMatches && cloudMatches.length > 0) {
-            setCustomMatches(cloudMatches);
-            saveCustomMatches(cloudMatches);
+            setCustomMatches((prev) => {
+              const matchMap = new Map<string, CustomMatch>();
+              prev.forEach((m) => matchMap.set(m.id, m));
+              cloudMatches.forEach((m) => matchMap.set(m.id, m));
+              const merged = Array.from(matchMap.values());
+              saveCustomMatches(merged);
+              return merged;
+            });
           }
         });
 
@@ -101,8 +113,8 @@ export default function App() {
           unsubMatches();
         };
       } else {
-        const guestUser = getUserProfile();
-        setUser(guestUser);
+        clearStoredUserProfile();
+        setUser(DEFAULT_GUEST_USER);
       }
     });
 
@@ -113,15 +125,28 @@ export default function App() {
   useEffect(() => {
     const unsubTournaments = subscribeToTournaments((dbTournaments) => {
       if (dbTournaments && dbTournaments.length > 0) {
-        setTournaments(dbTournaments);
-        saveStoredTournaments(dbTournaments);
+        setTournaments((prev) => {
+          const map = new Map<string, Tournament>();
+          INITIAL_TOURNAMENTS.forEach((t) => map.set(t.id, t));
+          prev.forEach((t) => map.set(t.id, t));
+          dbTournaments.forEach((t) => map.set(t.id, t));
+          const merged = Array.from(map.values());
+          saveStoredTournaments(merged);
+          return merged;
+        });
       }
     });
 
     const unsubVerifications = subscribeToVerificationRequests((dbVerifications) => {
       if (dbVerifications && dbVerifications.length > 0) {
-        setVerificationRequests(dbVerifications);
-        saveVerificationRequests(dbVerifications);
+        setVerificationRequests((prev) => {
+          const map = new Map<string, VerificationRequest>();
+          prev.forEach((v) => map.set(v.id, v));
+          dbVerifications.forEach((v) => map.set(v.id, v));
+          const merged = Array.from(map.values());
+          saveVerificationRequests(merged);
+          return merged;
+        });
       }
     });
 
