@@ -74,67 +74,85 @@ export const subscribeToAuthChanges = (
 };
 
 export const fetchOrCreateUserProfile = async (fbUser: FirebaseUser): Promise<UserProfile> => {
-  const userRef = doc(db, 'users', fbUser.uid);
-  const snap = await getDoc(userRef);
+  const fallbackProfile: UserProfile = {
+    id: fbUser.uid,
+    uid: fbUser.uid,
+    name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Gamer',
+    email: fbUser.email || '',
+    role: 'player',
+    avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
+    bgmiId: ''
+  };
 
-  if (snap.exists()) {
-    const data = snap.data();
-    return {
-      id: fbUser.uid,
-      uid: fbUser.uid,
-      name: data.displayName || fbUser.displayName || 'Gamer',
-      email: fbUser.email || '',
-      role: data.role || 'player',
-      avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
-      bgmiId: data.bgmiId || ''
-    };
-  } else {
-    const newProfile: UserProfile = {
-      id: fbUser.uid,
-      uid: fbUser.uid,
-      name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Gamer',
-      email: fbUser.email || '',
-      role: 'player',
-      avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
-      bgmiId: ''
-    };
-    await setDoc(userRef, {
-      uid: newProfile.uid,
-      displayName: newProfile.name,
-      email: newProfile.email,
-      role: newProfile.role,
-      photoURL: newProfile.avatar,
-      bgmiId: '',
-      createdAt: new Date().toISOString()
-    });
-    return newProfile;
+  try {
+    const userRef = doc(db, 'users', fbUser.uid);
+    const snap = await getDoc(userRef);
+
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        id: fbUser.uid,
+        uid: fbUser.uid,
+        name: data.displayName || fbUser.displayName || 'Gamer',
+        email: fbUser.email || '',
+        role: data.role || 'player',
+        avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
+        bgmiId: data.bgmiId || ''
+      };
+    } else {
+      try {
+        await setDoc(userRef, {
+          uid: fallbackProfile.uid,
+          displayName: fallbackProfile.name,
+          email: fallbackProfile.email,
+          role: fallbackProfile.role,
+          photoURL: fallbackProfile.avatar,
+          bgmiId: '',
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn('Firestore setDoc failed, proceeding with fallback profile:', e);
+      }
+      return fallbackProfile;
+    }
+  } catch (err) {
+    console.warn('Firestore fetchOrCreateUserProfile error, proceeding with fallback profile:', err);
+    return fallbackProfile;
   }
 };
 
 export const syncUserProfile = async (fbUser: FirebaseUser, customName?: string) => {
-  const userRef = doc(db, 'users', fbUser.uid);
-  const snap = await getDoc(userRef);
+  try {
+    const userRef = doc(db, 'users', fbUser.uid);
+    const snap = await getDoc(userRef);
 
-  if (!snap.exists()) {
-    await setDoc(userRef, {
-      uid: fbUser.uid,
-      displayName: customName || fbUser.displayName || fbUser.email?.split('@')[0] || 'Gamer',
-      email: fbUser.email || '',
-      role: 'player',
-      photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
-      bgmiId: '',
-      createdAt: new Date().toISOString()
-    });
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        uid: fbUser.uid,
+        displayName: customName || fbUser.displayName || fbUser.email?.split('@')[0] || 'Gamer',
+        email: fbUser.email || '',
+        role: 'player',
+        photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
+        bgmiId: '',
+        createdAt: new Date().toISOString()
+      });
+    }
+  } catch (err) {
+    console.warn('Firestore syncUserProfile warning:', err);
   }
 };
 
 export const updateUserProfileData = async (uid: string, data: Partial<UserProfile>) => {
-  const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, {
-    displayName: data.name,
-    bgmiId: data.bgmiId,
-    role: data.role
-  });
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      displayName: data.name,
+      bgmiId: data.bgmiId,
+      role: data.role
+    });
+  } catch (err) {
+    console.warn('Firestore updateUserProfileData failed:', err);
+  }
 };
 
 // REALTIME TOURNAMENTS SYNC
@@ -154,13 +172,21 @@ export const subscribeToTournaments = (callback: (tournaments: Tournament[]) => 
 };
 
 export const saveTournamentToFirestore = async (tournament: Tournament) => {
-  const tRef = doc(db, 'tournaments', tournament.id);
-  await setDoc(tRef, tournament, { merge: true });
+  try {
+    const tRef = doc(db, 'tournaments', tournament.id);
+    await setDoc(tRef, tournament, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveTournamentToFirestore error:', err);
+  }
 };
 
 export const deleteTournamentFromFirestore = async (id: string) => {
-  const tRef = doc(db, 'tournaments', id);
-  await deleteDoc(tRef);
+  try {
+    const tRef = doc(db, 'tournaments', id);
+    await deleteDoc(tRef);
+  } catch (err) {
+    console.warn('Firestore deleteTournamentFromFirestore error:', err);
+  }
 };
 
 // USER SCHEDULE SYNC (Cross-Device Saved Tournaments)
@@ -170,12 +196,18 @@ export const subscribeToUserSchedule = (uid: string, callback: (savedIds: string
     if (snap.exists()) {
       callback(snap.data().savedIds || []);
     }
+  }, (err) => {
+    console.warn('Firestore userSchedule subscribe error:', err);
   });
 };
 
 export const saveUserScheduleToFirestore = async (uid: string, savedIds: string[]) => {
-  const scheduleRef = doc(db, 'userSchedules', uid);
-  await setDoc(scheduleRef, { savedIds, updatedAt: new Date().toISOString() }, { merge: true });
+  try {
+    const scheduleRef = doc(db, 'userSchedules', uid);
+    await setDoc(scheduleRef, { savedIds, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveUserSchedule error:', err);
+  }
 };
 
 // CUSTOM MATCHES SYNC (Cross-Device Custom Rooms)
@@ -190,17 +222,27 @@ export const subscribeToUserCustomMatches = (uid: string, callback: (matches: Cu
       }
     });
     callback(list);
+  }, (err) => {
+    console.warn('Firestore customMatches subscribe error:', err);
   });
 };
 
 export const saveCustomMatchToFirestore = async (match: CustomMatch) => {
-  const matchRef = doc(db, 'customMatches', match.id);
-  await setDoc(matchRef, match, { merge: true });
+  try {
+    const matchRef = doc(db, 'customMatches', match.id);
+    await setDoc(matchRef, match, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveCustomMatch error:', err);
+  }
 };
 
 export const deleteCustomMatchFromFirestore = async (id: string) => {
-  const matchRef = doc(db, 'customMatches', id);
-  await deleteDoc(matchRef);
+  try {
+    const matchRef = doc(db, 'customMatches', id);
+    await deleteDoc(matchRef);
+  } catch (err) {
+    console.warn('Firestore deleteCustomMatch error:', err);
+  }
 };
 
 // VERIFICATION REQUESTS SYNC
@@ -212,10 +254,16 @@ export const subscribeToVerificationRequests = (callback: (requests: Verificatio
       list.push(docSnap.data() as VerificationRequest);
     });
     callback(list);
+  }, (err) => {
+    console.warn('Firestore verificationRequests subscribe error:', err);
   });
 };
 
 export const saveVerificationRequestToFirestore = async (req: VerificationRequest) => {
-  const reqRef = doc(db, 'verificationRequests', req.id);
-  await setDoc(reqRef, req, { merge: true });
+  try {
+    const reqRef = doc(db, 'verificationRequests', req.id);
+    await setDoc(reqRef, req, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveVerificationRequest error:', err);
+  }
 };
