@@ -1,30 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  onSnapshot,
-  orderBy
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
 } from 'firebase/firestore';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
 
@@ -32,9 +12,7 @@ function sanitizeValue(val: string | undefined): string {
   if (!val || typeof val !== 'string') return '';
   let str = val.trim();
   if (str === 'undefined' || str === 'null') return '';
-  // Strip quotes
   str = str.replace(/^["']|["']$/g, '').trim();
-  // Strip "NAME=" prefix if key=value was pasted into env input
   if (str.includes('=')) {
     const parts = str.split('=');
     str = parts[parts.length - 1].trim().replace(/^["']|["']$/g, '');
@@ -90,27 +68,29 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+let dbInstance: ReturnType<typeof getFirestore>;
 
-export {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  firebaseSignOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  onAuthStateChanged,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  onSnapshot,
-  orderBy
-};
-export type { FirebaseUser };
+try {
+  if (databaseId) {
+    dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }, databaseId);
+  } else {
+    dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  }
+} catch (err) {
+  if (databaseId) {
+    dbInstance = getFirestore(app, databaseId);
+  } else {
+    dbInstance = getFirestore(app);
+  }
+}
+
+export const db = dbInstance;
+export default app;

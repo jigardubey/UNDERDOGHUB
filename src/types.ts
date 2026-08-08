@@ -27,6 +27,7 @@ export interface Tournament {
 
 export interface CustomMatch {
   id: string;
+  userUid?: string;
   tournamentName: string;
   organizer?: string;
   matchDate: string;
@@ -45,6 +46,8 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   inGameId?: string;
+  bgmiId?: string;
+  avatar?: string;
   squadName?: string;
   createdAt?: string;
 }

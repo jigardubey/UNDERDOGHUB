@@ -1,12 +1,12 @@
 {
-  "projectId": "underdog-hub",
-  "appId": "1:800666044776:web:aa2208e9dc2acced1beedd",
-  "apiKey": "AIzaSyDeLfO3CaMeuk-hjyEBLJqNev_WM5U_KXs",
-  "authDomain": "underdog-hub.firebaseapp.com",
-  "firestoreDatabaseId": "",
-  "storageBucket": "underdog-hub.firebasestorage.app",
-  "messagingSenderId": "800666044776",
+  "projectId": "concrete-signal-v98sv",
+  "appId": "1:274609857437:web:e7e30f657efbebc629c574",
+  "apiKey": "AIzaSyBMvGkAIez6e4tIiYvHnPai-NSADw8gm0s",
+  "authDomain": "concrete-signal-v98sv.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-underdoghub-244a4cbb-4cd0-4009-b1b6-6f8e3d75c688",
+  "storageBucket": "concrete-signal-v98sv.firebasestorage.app",
+  "messagingSenderId": "274609857437",
   "measurementId": "",
-  "oAuthClientId": "",
+  "oAuthClientId": "274609857437-o7rrblbetnpn813c16pummj361b3k290.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

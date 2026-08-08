@@ -20,24 +20,17 @@ import {
 } from './lib/storage';
 
 import {
-  auth,
-  onAuthStateChanged,
-  FirebaseUser
-} from './lib/firebase';
-
-import {
-  subscribeTournamentsDb,
-  saveTournamentToDb,
-  deleteTournamentFromDb,
-  subscribeVerificationRequestsDb,
-  saveVerificationRequestToDb,
-  subscribeSettingsDb,
-  saveSettingsToDb,
-  subscribeUserProfileDb,
-  saveUserProfileToDb,
-  subscribeUserSavedDataDb,
-  saveUserSavedDataToDb,
-  logActivityToDb
+  subscribeToAuthChanges,
+  subscribeToTournaments,
+  saveTournamentToFirestore,
+  deleteTournamentFromFirestore,
+  subscribeToUserSchedule,
+  saveUserScheduleToFirestore,
+  subscribeToUserCustomMatches,
+  saveCustomMatchToFirestore,
+  deleteCustomMatchFromFirestore,
+  subscribeToVerificationRequests,
+  saveVerificationRequestToFirestore
 } from './lib/dbServices';
 
 import { Navbar } from './components/Navbar';
@@ -64,7 +57,6 @@ export default function App() {
   const [customMatches, setCustomMatches] = useState<CustomMatch[]>(getCustomMatches);
   const [user, setUser] = useState<UserProfile>(getUserProfile);
 
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -80,117 +72,82 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState<boolean>(false);
 
-  // 1. FIREBASE AUTHENTICATION LISTENER
+  // 1. REAL-TIME AUTHENTICATION & USER DATA LISTENERS
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
-      setFirebaseUser(fbUser);
-      if (fbUser) {
-        // Sync user profile with Firestore
-        const defaultProfile: UserProfile = {
-          id: fbUser.uid,
-          uid: fbUser.uid,
-          name: fbUser.displayName || user.name || 'Gamer_' + fbUser.uid.substring(0, 5),
-          email: fbUser.email || '',
-          role: user.role === 'admin' ? 'admin' : 'player',
-          inGameId: user.inGameId || '',
-          squadName: user.squadName || '',
-          createdAt: new Date().toISOString()
-        };
-        setUser((prev) => ({ ...prev, id: fbUser.uid, uid: fbUser.uid, email: fbUser.email || prev.email }));
-        saveUserProfileToDb(defaultProfile);
+    const unsubAuth = subscribeToAuthChanges((loggedInUser) => {
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        saveUserProfile(loggedInUser);
 
-        // Subscribe to user saved data in Firestore
-        const unsubUserData = subscribeUserSavedDataDb(fbUser.uid, (data) => {
-          if (data.savedIds) setSavedIds(data.savedIds);
-          if (data.customMatches) setCustomMatches(data.customMatches);
+        // Sync user saved tournament schedule from Firestore across all devices
+        const unsubSchedule = subscribeToUserSchedule(loggedInUser.uid, (cloudSavedIds) => {
+          if (cloudSavedIds && cloudSavedIds.length > 0) {
+            setSavedIds(cloudSavedIds);
+            saveSavedTournamentIds(cloudSavedIds);
+          }
         });
 
-        // Subscribe to user profile changes
-        const unsubProfile = subscribeUserProfileDb(fbUser.uid, (prof) => {
-          if (prof) setUser(prof);
+        // Sync user custom matches from Firestore across all devices
+        const unsubMatches = subscribeToUserCustomMatches(loggedInUser.uid, (cloudMatches) => {
+          if (cloudMatches && cloudMatches.length > 0) {
+            setCustomMatches(cloudMatches);
+            saveCustomMatches(cloudMatches);
+          }
         });
 
         return () => {
-          unsubUserData();
-          unsubProfile();
+          unsubSchedule();
+          unsubMatches();
         };
+      } else {
+        const guestUser = getUserProfile();
+        setUser(guestUser);
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => unsubAuth();
   }, []);
 
-  // 2. FIRESTORE REAL-TIME SUBSCRIPTIONS
+  // 2. REAL-TIME GLOBAL FIRESTORE SUBSCRIPTIONS (Tournaments & Verification Requests)
   useEffect(() => {
-    // Subscribe to Tournaments Collection
-    const unsubTournaments = subscribeTournamentsDb((dbTournaments) => {
+    const unsubTournaments = subscribeToTournaments((dbTournaments) => {
       if (dbTournaments && dbTournaments.length > 0) {
         setTournaments(dbTournaments);
         saveStoredTournaments(dbTournaments);
-      } else if (tournaments.length > 0) {
-        // Seed initial tournaments to Firestore if empty
-        tournaments.forEach((t) => saveTournamentToDb(t));
       }
     });
 
-    // Subscribe to Verification Requests Collection
-    const unsubVerifications = subscribeVerificationRequestsDb((dbVerifications) => {
-      if (dbVerifications) {
+    const unsubVerifications = subscribeToVerificationRequests((dbVerifications) => {
+      if (dbVerifications && dbVerifications.length > 0) {
         setVerificationRequests(dbVerifications);
         saveVerificationRequests(dbVerifications);
-      }
-    });
-
-    // Subscribe to Settings Collection (Fee, Payment Settings, & Admin Passcode)
-    const unsubSettings = subscribeSettingsDb((data) => {
-      if (data.verificationFee) {
-        setVerificationFee(data.verificationFee);
-        saveVerificationFee(data.verificationFee);
-      }
-      if (data.adminPasscode) {
-        setAdminPasscode(data.adminPasscode);
-        saveAdminPasscode(data.adminPasscode);
-      }
-      if (data.paymentSettings) {
-        setPaymentSettings(prev => {
-          const updated = { ...prev, ...data.paymentSettings };
-          savePaymentSettings(updated);
-          return updated;
-        });
       }
     });
 
     return () => {
       unsubTournaments();
       unsubVerifications();
-      unsubSettings();
     };
   }, []);
 
-  // 3. PERSISTENT STORAGE FALLBACK CACHING
+  // 3. PERSISTENT LOCAL CACHING
   useEffect(() => {
     saveStoredTournaments(tournaments);
   }, [tournaments]);
 
   useEffect(() => {
     saveSavedTournamentIds(savedIds);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, savedIds, customMatches);
+    if (user && user.uid && user.uid !== 'guest' && user.uid !== 'local-guest') {
+      saveUserScheduleToFirestore(user.uid, savedIds);
     }
-  }, [savedIds]);
+  }, [savedIds, user]);
 
   useEffect(() => {
     saveCustomMatches(customMatches);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, savedIds, customMatches);
-    }
   }, [customMatches]);
 
   useEffect(() => {
     saveUserProfile(user);
-    if (firebaseUser) {
-      saveUserProfileToDb(user);
-    }
   }, [user]);
 
   useEffect(() => {
@@ -225,8 +182,8 @@ export default function App() {
       addToast('Saved!', 'Tournament added to your schedule.');
     }
     setSavedIds(newSavedIds);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, newSavedIds, customMatches);
+    if (user && user.uid && user.uid !== 'guest' && user.uid !== 'local-guest') {
+      saveUserScheduleToFirestore(user.uid, newSavedIds);
     }
   };
 
@@ -235,26 +192,21 @@ export default function App() {
     if (inputPasscode === adminPasscode) {
       setIsAdminAuthenticated(true);
       setUser((prev) => ({ ...prev, role: 'admin' }));
-      logActivityToDb('ADMIN_LOGIN', 'Admin authenticated with passcode', firebaseUser?.uid, user.email);
       addToast('Admin Access Granted', 'Welcome to the Admin Control Panel.');
       return true;
     }
-    logActivityToDb('FAILED_ADMIN_LOGIN', 'Incorrect passcode attempt', firebaseUser?.uid, user.email);
     return false;
   };
 
   const handleChangeAdminPasscode = (newPasscode: string) => {
     setAdminPasscode(newPasscode);
     saveAdminPasscode(newPasscode);
-    saveSettingsToDb({ adminPasscode: newPasscode });
-    logActivityToDb('CHANGE_ADMIN_PASSCODE', 'Admin passcode updated', firebaseUser?.uid, user.email);
     addToast('Passcode Updated', 'Private Admin Passcode has been changed.', 'success');
   };
 
   const handleLockAdminSession = () => {
     setIsAdminAuthenticated(false);
     setUser((prev) => ({ ...prev, role: 'player' }));
-    logActivityToDb('ADMIN_LOGOUT', 'Admin session locked', firebaseUser?.uid, user.email);
     addToast('Admin Session Locked', 'You have been logged out of the private admin console.', 'info');
     if (activeTab === 'admin') setActiveTab('home');
   };
@@ -278,16 +230,12 @@ export default function App() {
   const handleChangeVerificationFee = (newFee: number) => {
     setVerificationFee(newFee);
     saveVerificationFee(newFee);
-    saveSettingsToDb({ verificationFee: newFee });
-    logActivityToDb('CHANGE_FEE', `Verification fee changed to ₹${newFee}`, firebaseUser?.uid, user.email);
     addToast('Verification Fee Updated', `New badge verification fee set to ₹${newFee}`);
   };
 
   const handleUpdatePaymentSettings = (newSettings: PaymentSettings) => {
     setPaymentSettings(newSettings);
     savePaymentSettings(newSettings);
-    saveSettingsToDb({ paymentSettings: newSettings });
-    logActivityToDb('UPDATE_PAYMENT_SETTINGS', 'Admin updated payment QR & UPI settings', firebaseUser?.uid, user.email);
   };
 
   // Custom Match Handlers
@@ -295,29 +243,29 @@ export default function App() {
     const created: CustomMatch = {
       ...newMatch,
       id: `cm-${Date.now()}`,
+      userUid: user.uid,
       createdAt: new Date().toISOString()
     };
     const updated = [created, ...customMatches];
     setCustomMatches(updated);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, savedIds, updated);
+    if (user && user.uid && user.uid !== 'guest' && user.uid !== 'local-guest') {
+      saveCustomMatchToFirestore(created);
     }
   };
 
   const handleDeleteCustomMatch = (id: string) => {
     const updated = customMatches.filter((m) => m.id !== id);
     setCustomMatches(updated);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, savedIds, updated);
-    }
+    deleteCustomMatchFromFirestore(id);
     addToast('Deleted', 'Custom match entry removed.');
   };
 
   const handleToggleCompleteMatch = (id: string) => {
     const updated = customMatches.map((m) => (m.id === id ? { ...m, isCompleted: !m.isCompleted } : m));
     setCustomMatches(updated);
-    if (firebaseUser) {
-      saveUserSavedDataToDb(firebaseUser.uid, savedIds, updated);
+    const target = updated.find((m) => m.id === id);
+    if (target && user && user.uid && user.uid !== 'guest' && user.uid !== 'local-guest') {
+      saveCustomMatchToFirestore(target);
     }
   };
 
@@ -326,14 +274,13 @@ export default function App() {
     const created: Tournament = {
       ...newT,
       id: `sub-${Date.now()}`,
-      organizerUid: firebaseUser?.uid || 'guest',
+      organizerUid: user.uid || 'guest',
       slotsFilled: 0,
       isVerified: false,
       isPendingApproval: true
     };
     setTournaments([created, ...tournaments]);
-    saveTournamentToDb(created);
-    logActivityToDb('SUBMIT_TOURNAMENT', `Tournament "${created.name}" submitted by ${created.organizer}`, firebaseUser?.uid, user.email);
+    saveTournamentToFirestore(created);
   };
 
   // Admin Actions
@@ -342,29 +289,20 @@ export default function App() {
     if (target) {
       const updated = { ...target, isPendingApproval: false };
       setTournaments(tournaments.map((t) => (t.id === id ? updated : t)));
-      saveTournamentToDb(updated);
-      logActivityToDb('APPROVE_TOURNAMENT', `Approved tournament "${target.name}"`, firebaseUser?.uid, user.email);
+      saveTournamentToFirestore(updated);
       addToast('Tournament Approved!', `"${target.name}" is now live on the platform.`);
     }
   };
 
   const handleRejectSubmission = (id: string) => {
-    const target = tournaments.find((t) => t.id === id);
     setTournaments(tournaments.filter((t) => t.id !== id));
-    deleteTournamentFromDb(id);
-    if (target) {
-      logActivityToDb('REJECT_TOURNAMENT', `Rejected tournament "${target.name}"`, firebaseUser?.uid, user.email);
-    }
+    deleteTournamentFromFirestore(id);
     addToast('Submission Rejected', 'Tournament removed from queue.', 'info');
   };
 
   const handleDeleteTournament = (id: string) => {
-    const target = tournaments.find((t) => t.id === id);
     setTournaments(tournaments.filter((t) => t.id !== id));
-    deleteTournamentFromDb(id);
-    if (target) {
-      logActivityToDb('DELETE_TOURNAMENT', `Deleted tournament "${target.name}"`, firebaseUser?.uid, user.email);
-    }
+    deleteTournamentFromFirestore(id);
     addToast('Deleted', 'Tournament permanently removed from directory.', 'info');
   };
 
@@ -373,8 +311,7 @@ export default function App() {
     if (target) {
       const updated = { ...target, status };
       setTournaments(tournaments.map((t) => (t.id === id ? updated : t)));
-      saveTournamentToDb(updated);
-      logActivityToDb('UPDATE_STATUS', `Updated status of "${target.name}" to ${status}`, firebaseUser?.uid, user.email);
+      saveTournamentToFirestore(updated);
     }
   };
 
@@ -383,8 +320,7 @@ export default function App() {
     if (target) {
       const updated = { ...target, isVerified: !target.isVerified };
       setTournaments(tournaments.map((t) => (t.id === id ? updated : t)));
-      saveTournamentToDb(updated);
-      logActivityToDb('TOGGLE_VERIFIED', `Toggled verification for "${target.name}"`, firebaseUser?.uid, user.email);
+      saveTournamentToFirestore(updated);
     }
   };
 
@@ -395,8 +331,7 @@ export default function App() {
     } else {
       setTournaments([updated, ...tournaments]);
     }
-    saveTournamentToDb(updated);
-    logActivityToDb('SAVE_TOURNAMENT', `Saved edits for "${updated.name}"`, firebaseUser?.uid, user.email);
+    saveTournamentToFirestore(updated);
     addToast('Tournament Saved', `Updated details for ${updated.name}`);
   };
 
@@ -405,14 +340,13 @@ export default function App() {
     const newReq: VerificationRequest = {
       ...reqData,
       id: `vreq-${Date.now()}`,
-      applicantUid: firebaseUser?.uid || 'guest',
+      applicantUid: user.uid || 'guest',
       feePaid: verificationFee,
       status: 'pending',
       createdAt: new Date().toISOString()
     };
     setVerificationRequests([newReq, ...verificationRequests]);
-    saveVerificationRequestToDb(newReq);
-    logActivityToDb('SUBMIT_VERIFICATION', `Verification requested for ${newReq.organizerName}`, firebaseUser?.uid, user.email);
+    saveVerificationRequestToFirestore(newReq);
     addToast('Application Submitted!', 'Verification application and payment received. Pending admin review.', 'success');
   };
 
@@ -421,7 +355,7 @@ export default function App() {
     if (req) {
       const updatedReq: VerificationRequest = { ...req, status: 'approved', reviewedAt: new Date().toISOString() };
       setVerificationRequests(verificationRequests.map((r) => (r.id === requestId ? updatedReq : r)));
-      saveVerificationRequestToDb(updatedReq);
+      saveVerificationRequestToFirestore(updatedReq);
 
       // Mark all tournaments by this organizer as verified
       const updatedTournaments = tournaments.map((t) =>
@@ -432,11 +366,10 @@ export default function App() {
       setTournaments(updatedTournaments);
       updatedTournaments.forEach((t) => {
         if (t.organizer.trim().toLowerCase() === organizerName.trim().toLowerCase()) {
-          saveTournamentToDb(t);
+          saveTournamentToFirestore(t);
         }
       });
 
-      logActivityToDb('APPROVE_VERIFICATION', `Approved verification for ${organizerName}`, firebaseUser?.uid, user.email);
       addToast('Badge Approved!', `Verified Organizer badge granted to ${organizerName}`);
     }
   };
@@ -446,8 +379,7 @@ export default function App() {
     if (req) {
       const updatedReq: VerificationRequest = { ...req, status: 'rejected', reviewedAt: new Date().toISOString() };
       setVerificationRequests(verificationRequests.map((r) => (r.id === requestId ? updatedReq : r)));
-      saveVerificationRequestToDb(updatedReq);
-      logActivityToDb('REJECT_VERIFICATION', `Rejected verification for ${req.organizerName}`, firebaseUser?.uid, user.email);
+      saveVerificationRequestToFirestore(updatedReq);
       addToast('Application Rejected', `Verification application rejected.`, 'info');
     }
   };
@@ -461,10 +393,9 @@ export default function App() {
     setTournaments(updatedTournaments);
     updatedTournaments.forEach((t) => {
       if (t.organizer.trim().toLowerCase() === organizerName.trim().toLowerCase()) {
-        saveTournamentToDb(t);
+        saveTournamentToFirestore(t);
       }
     });
-    logActivityToDb('REMOVE_VERIFICATION', `Revoked verification badge from ${organizerName}`, firebaseUser?.uid, user.email);
     addToast('Badge Revoked', `Removed verified badge status from ${organizerName}`, 'info');
   };
 
@@ -504,13 +435,8 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onSubmit={() => {
-                if (!firebaseUser) {
-                  setShowAuthModal(true);
-                  addToast('Authentication Required', 'Please sign in or register to submit your tournament.', 'info');
-                } else {
-                  setActiveTab('submit');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+                setActiveTab('submit');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
 
@@ -652,16 +578,16 @@ export default function App() {
         )}
 
         {/* MY SCHEDULE VIEW */}
-        {activeTab === 'my-schedule' && (
+        {activeTab === 'my-tournaments' && (
           <MyTournaments
             savedTournaments={savedTournaments}
             customMatches={customMatches}
-            onToggleSave={handleToggleSave}
+            onRemoveSaved={handleToggleSave}
             onAddCustomMatch={handleAddCustomMatch}
             onDeleteCustomMatch={handleDeleteCustomMatch}
             onToggleCompleteMatch={handleToggleCompleteMatch}
             onViewDetails={setSelectedTournament}
-            onExploreClick={() => setActiveTab('tournaments')}
+            onShowToast={addToast}
           />
         )}
 
@@ -671,7 +597,7 @@ export default function App() {
             onSubmitTournament={handleSubmitTournament}
             pendingSubmissions={pendingSubmissions}
             onOpenVerificationModal={() => setShowVerificationModal(true)}
-            verificationFee={verificationFee}
+            paymentSettings={paymentSettings}
             onShowToast={addToast}
           />
         )}
@@ -729,15 +655,9 @@ export default function App() {
 
       {showAuthModal && (
         <AuthModal
-          user={user}
-          firebaseUser={firebaseUser}
-          onSaveProfile={(updated) => {
-            setUser(updated);
-            if (firebaseUser) {
-              saveUserProfileToDb(updated);
-            }
-          }}
+          isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
+          currentUser={user}
           onShowToast={addToast}
         />
       )}
@@ -759,7 +679,6 @@ export default function App() {
         <VerificationModal
           isOpen={showVerificationModal}
           onClose={() => setShowVerificationModal(false)}
-          verificationFee={verificationFee}
           paymentSettings={paymentSettings}
           onSubmitApplication={handleSubmitVerification}
           onShowToast={addToast}

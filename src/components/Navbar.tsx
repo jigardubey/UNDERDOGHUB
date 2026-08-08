@@ -8,7 +8,6 @@ interface NavbarProps {
   savedCount: number;
   user: UserProfile;
   isAdminAuthenticated?: boolean;
-  onOpenAuth: () => void;
   onToggleAdminRole: () => void;
   onOpenAdminAuth?: () => void;
 }
@@ -19,7 +18,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   savedCount,
   user,
   isAdminAuthenticated = false,
-  onOpenAuth,
   onToggleAdminRole,
   onOpenAdminAuth
 }) => {
@@ -129,17 +127,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Shield className="w-3.5 h-3.5 text-[#FF7A00]" />
               <span>{isAdminAuthenticated && user.role === 'admin' ? 'Private Admin Console' : 'Private Admin'}</span>
             </button>
-
-            {/* Profile / Auth Button */}
-            <button
-              onClick={onOpenAuth}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#FF7A00] text-black hover:bg-[#FF8A1F] transition-colors text-sm font-bold shadow-lg shadow-[#FF7A00]/20"
-            >
-              <div className="w-6 h-6 rounded-full bg-black text-[#FF7A00] flex items-center justify-center font-black text-xs">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <span className="truncate max-w-[100px]">{user.name}</span>
-            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -190,19 +177,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
           ))}
-
-          <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-            <button
-              onClick={() => {
-                onOpenAuth();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#16161D] text-white border border-white/5 font-semibold"
-            >
-              <User className="w-4 h-4 text-[#FF7A00]" />
-              Account: {user.name} ({user.role})
-            </button>
-          </div>
         </div>
       )}
     </header>
