@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tournament } from '../types';
 import { X, CheckCircle2, Trophy, Ticket, Calendar, Clock, Bookmark, ExternalLink, ShieldCheck, Download, Share2, BellRing, Sparkles } from 'lucide-react';
 import { downloadIcsCalendar } from '../lib/storage';
+import { DEFAULT_UNDERDOG_BANNER } from '../lib/constants';
 
 interface TournamentDetailModalProps {
   tournament: Tournament | null;
@@ -47,10 +48,13 @@ export const TournamentDetailModal: React.FC<TournamentDetailModalProps> = ({
         {/* Header Image & Actions */}
         <div className="relative h-56 sm:h-64 w-full bg-[#1A1B26] shrink-0">
           <img
-            src={tournament.bannerUrl}
+            src={tournament.bannerUrl || DEFAULT_UNDERDOG_BANNER}
             alt={tournament.name}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = DEFAULT_UNDERDOG_BANNER;
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#12131A] via-black/40 to-transparent" />
 

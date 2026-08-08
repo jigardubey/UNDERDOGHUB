@@ -99,6 +99,10 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({
               </button>
             </div>
 
+            <span className="text-[10px] text-white/40 block mt-1.5 font-mono">
+              Default passcode: <strong className="text-[#FF7A00]">1451</strong>
+            </span>
+
             {error && (
               <div className="flex items-center gap-1.5 text-red-400 text-xs mt-2 font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0" />

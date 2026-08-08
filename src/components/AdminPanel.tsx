@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Tournament, MatchFormat, VerificationRequest } from '../types';
+import { Tournament, MatchFormat, VerificationRequest, PaymentSettings } from '../types';
 import { 
   ShieldCheck, Check, X, Edit2, Trash2, Plus, CheckCircle2, Clock, Play, 
   CheckCircle, AlertTriangle, Search, Lock, KeyRound, Eye, EyeOff, LogOut, Key, Shield,
-  Award, DollarSign, ExternalLink, Mail, Phone, Link2
+  Award, DollarSign, ExternalLink, Mail, Phone, Link2, QrCode, Upload, ToggleLeft, ToggleRight,
+  Maximize2
 } from 'lucide-react';
 
 interface AdminPanelProps {
   tournaments: Tournament[];
   verificationRequests: VerificationRequest[];
   verificationFee: number;
+  paymentSettings: PaymentSettings;
   isAdminAuthenticated: boolean;
   onVerifyPasscode: (passcode: string) => boolean;
   onLockAdminSession: () => void;
@@ -24,6 +26,7 @@ interface AdminPanelProps {
   onRejectVerification: (requestId: string) => void;
   onRemoveVerification: (organizerName: string) => void;
   onChangeVerificationFee: (newFee: number) => void;
+  onUpdatePaymentSettings: (settings: PaymentSettings) => void;
   onShowToast: (title: string, message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
@@ -31,6 +34,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   tournaments,
   verificationRequests,
   verificationFee,
+  paymentSettings,
   isAdminAuthenticated,
   onVerifyPasscode,
   onLockAdminSession,
@@ -45,14 +49,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onRejectVerification,
   onRemoveVerification,
   onChangeVerificationFee,
+  onUpdatePaymentSettings,
   onShowToast
 }) => {
   const [adminTab, setAdminTab] = useState<'pending' | 'verifications' | 'manage' | 'create'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
 
-  // Fee setting state
-  const [customFeeInput, setCustomFeeInput] = useState<string>(verificationFee.toString());
+  // Fee & Payment Settings local form states
+  const [upiIdInput, setUpiIdInput] = useState<string>(paymentSettings.upiId || 'underdoghub@upi');
+  const [qrCodeInput, setQrCodeInput] = useState<string>(paymentSettings.qrCodeUrl || '');
+  const [regularFeeInput, setRegularFeeInput] = useState<number>(paymentSettings.regularFee || 199);
+  const [launchFeeInput, setLaunchFeeInput] = useState<number>(paymentSettings.launchFee || 49);
+  const [isLaunchOfferEnabled, setIsLaunchOfferEnabled] = useState<boolean>(paymentSettings.isLaunchOfferEnabled ?? true);
+
+  // Full-screen Image Preview Modal
+  const [inspectImageModal, setInspectImageModal] = useState<string | null>(null);
 
   // Private Access Login States
   const [passcode, setPasscode] = useState('');
@@ -166,6 +178,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+
+              <span className="text-[10px] text-white/40 block mt-1.5 font-mono">
+                Default passcode: <strong className="text-[#FF7A00]">1451</strong>
+              </span>
 
               {loginError && (
                 <div className="flex items-center gap-1.5 text-red-400 text-xs mt-2 font-medium">
@@ -458,74 +474,190 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 2: ORGANIZER VERIFICATION REQUESTS & FEE CONFIG */}
+      {/* TAB 2: ORGANIZER VERIFICATION REQUESTS & PAYMENT SETTINGS */}
       {adminTab === 'verifications' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           
-          {/* Fee Configuration Box */}
-          <div className="p-6 rounded-2xl bg-[#12131A] border border-[#FF7A00]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center text-[#FF7A00]">
-                <ShieldCheck className="w-6 h-6" />
+          {/* Admin Payment Settings Box */}
+          <div className="p-6 sm:p-8 rounded-2xl bg-[#12131A] border border-[#FF7A00]/30 space-y-6 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center text-[#FF7A00]">
+                  <QrCode className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-[#Sora]">Admin Payment & Fee Settings</h3>
+                  <p className="text-xs text-white/50">Manage your UPI ID, scanner QR code, verification fees, and launch offers</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white font-[#Sora]">Organizer Verification Fee Setting</h3>
-                <p className="text-xs text-white/50">Configure the verification application fee for organizers</p>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdatePaymentSettings({
+                    upiId: upiIdInput.trim(),
+                    qrCodeUrl: qrCodeInput,
+                    regularFee: Number(regularFeeInput) || 199,
+                    launchFee: Number(launchFeeInput) || 49,
+                    isLaunchOfferEnabled: isLaunchOfferEnabled
+                  });
+                  onChangeVerificationFee(isLaunchOfferEnabled ? Number(launchFeeInput) : Number(regularFeeInput));
+                  onShowToast('Payment Settings Saved!', 'UPI ID, QR Scanner, and pricing updated successfully.', 'success');
+                }}
+                className="px-6 py-2.5 rounded-xl bg-[#FF7A00] hover:bg-[#FF8A1F] text-black font-extrabold text-xs shadow-lg shadow-[#FF7A00]/20 flex items-center gap-2 transition-all shrink-0"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Save Payment Settings</span>
+              </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const num = parseInt(customFeeInput, 10);
-                if (isNaN(num) || num < 0) {
-                  onShowToast('Invalid Fee', 'Please enter a valid amount.', 'error');
-                  return;
-                }
-                onChangeVerificationFee(num);
-                onShowToast('Verification Fee Updated', `New fee set to ₹${num}`, 'success');
-              }}
-              className="flex items-center gap-2 w-full sm:w-auto"
-            >
-              <div className="relative flex-1 sm:w-36">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm">₹</span>
-                <input
-                  type="number"
-                  value={customFeeInput}
-                  onChange={(e) => setCustomFeeInput(e.target.value)}
-                  placeholder="499"
-                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#0B0B0F] border border-white/10 text-white font-bold text-sm focus:outline-none focus:border-[#FF7A00]"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* UPI ID & Pricing Inputs */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-white/70 uppercase tracking-wider mb-1">
+                    Admin UPI ID
+                  </label>
+                  <input
+                    type="text"
+                    value={upiIdInput}
+                    onChange={(e) => setUpiIdInput(e.target.value)}
+                    placeholder="e.g. underdoghub@upi or 9876543210@paytm"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#FF7A00]"
+                  />
+                  <span className="text-[10px] text-white/40 block mt-1">Organizers will copy or scan this UPI ID to make payment</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-white/70 uppercase tracking-wider mb-1">
+                      Regular Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={regularFeeInput}
+                      onChange={(e) => setRegularFeeInput(Number(e.target.value))}
+                      placeholder="199"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-xs font-bold focus:outline-none focus:border-[#FF7A00]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-white/70 uppercase tracking-wider mb-1">
+                      Launch Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={launchFeeInput}
+                      onChange={(e) => setLaunchFeeInput(Number(e.target.value))}
+                      placeholder="49"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-xs font-bold focus:outline-none focus:border-[#FF7A00]"
+                    />
+                  </div>
+                </div>
+
+                {/* Toggle Launch Offer */}
+                <div className="p-4 rounded-xl bg-[#0B0B0F] border border-white/5 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Enable ₹49 Launch Offer</span>
+                    <span className="text-[10px] text-white/50">Shows ₹199 crossed out with ₹49 launch price</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLaunchOfferEnabled(!isLaunchOfferEnabled)}
+                    className="text-[#FF7A00] hover:text-[#FF8A1F] transition-colors"
+                  >
+                    {isLaunchOfferEnabled ? (
+                      <ToggleRight className="w-8 h-8 text-[#FF7A00]" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-white/30" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-[#FF7A00] hover:bg-[#FF8A1F] text-black font-extrabold text-xs transition-all shadow-md shadow-[#FF7A00]/10 shrink-0"
-              >
-                Update Fee
-              </button>
-            </form>
+
+              {/* QR Scanner Image Upload */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-white/70 uppercase tracking-wider">
+                  Admin Payment Scanner / UPI QR Code Image
+                </label>
+
+                {qrCodeInput ? (
+                  <div className="relative p-3 rounded-2xl bg-[#0B0B0F] border border-[#FF7A00]/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={qrCodeInput} 
+                        alt="QR Scanner Preview" 
+                        className="w-20 h-20 object-contain rounded-xl bg-white p-1"
+                      />
+                      <div>
+                        <span className="text-xs font-bold text-white block">QR Code Active</span>
+                        <span className="text-[10px] text-green-400 font-semibold">Organizers can scan to pay</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setQrCodeInput('')}
+                      className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold border border-red-500/30"
+                    >
+                      Replace / Clear
+                    </button>
+                  </div>
+                ) : (
+                  <label className="relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 hover:border-[#FF7A00] rounded-2xl bg-[#0B0B0F] cursor-pointer transition-colors group">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === 'string') setQrCodeInput(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <Upload className="w-6 h-6 text-white/40 group-hover:text-[#FF7A00] mb-2 transition-colors" />
+                    <span className="text-xs font-bold text-white">Upload Payment QR Scanner Image</span>
+                    <span className="text-[10px] text-white/40">JPG, PNG, or WEBP</span>
+                  </label>
+                )}
+              </div>
+
+            </div>
           </div>
 
           {/* Verification Requests List */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white font-[#Sora]">
-              Verification Applications ({verificationRequests.length})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white font-[#Sora]">
+                Verification Applications & Payment Proofs ({verificationRequests.length})
+              </h2>
+              <span className="text-xs text-yellow-400 font-semibold bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+                Manual Admin Approval Required
+              </span>
+            </div>
 
             {verificationRequests.length === 0 ? (
               <div className="p-12 rounded-2xl bg-[#12131A] border border-white/5 text-center space-y-2">
                 <Shield className="w-12 h-12 text-white/20 mx-auto" />
-                <h3 className="text-base font-bold text-white">No Verification Requests Yet</h3>
-                <p className="text-xs text-gray-400">When organizers submit verification forms, they will appear here for your review.</p>
+                <h3 className="text-base font-bold text-white">No Verification Applications Yet</h3>
+                <p className="text-xs text-gray-400">When organizers pay and submit verification applications, they will appear here with payment screenshots and UTR numbers.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {verificationRequests.map((req) => (
-                  <div key={req.id} className="p-6 rounded-2xl bg-[#12131A] border border-white/10 space-y-4 shadow-xl">
+                  <div key={req.id} className="p-6 rounded-2xl bg-[#12131A] border border-white/10 space-y-5 shadow-xl">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-white">{req.organizerName}</h3>
+                          <h3 className="text-lg font-bold text-white font-[#Sora]">{req.organizerName}</h3>
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
                             req.status === 'approved' 
                               ? 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -533,20 +665,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               ? 'bg-red-500/20 text-red-400 border-red-500/30'
                               : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           }`}>
-                            {req.status === 'approved' ? '✔ Approved' : req.status === 'rejected' ? 'Rejected' : 'Pending Review'}
+                            {req.status === 'approved' ? '✔ Approved Badge' : req.status === 'rejected' ? 'Rejected' : 'Payment Status: Pending Verification'}
                           </span>
                         </div>
                         <p className="text-xs text-white/50">Submitted on {new Date(req.createdAt).toLocaleDateString()}</p>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-bold font-mono">
-                          Payment: Completed (₹{req.feePaid})
+                        <span className="px-3 py-1 rounded-lg bg-[#FF7A00]/10 text-[#FF7A00] border border-[#FF7A00]/30 text-xs font-bold font-mono">
+                          Fee Paid: ₹{req.feePaid}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-300">
+                    {/* Organizer & Contact Info */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-gray-300">
                       <div>
                         <span className="text-white/40 block font-semibold uppercase text-[10px]">Contact Info</span>
                         <div>Email: <strong className="text-white">{req.email}</strong></div>
@@ -554,35 +687,67 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div>
+                        <span className="text-white/40 block font-semibold uppercase text-[10px]">Payment UTR / Transaction ID</span>
+                        <div className="font-mono text-sm font-bold text-[#FF7A00] bg-[#0B0B0F] p-2 rounded-lg border border-white/10 mt-1">
+                          {req.utrNumber || 'No UTR provided'}
+                        </div>
+                      </div>
+
+                      <div>
                         <span className="text-white/40 block font-semibold uppercase text-[10px]">Social & Community</span>
-                        <div className="text-blue-400 truncate">{req.socialLinks || 'None provided'}</div>
+                        <div className="text-blue-400 truncate mt-1">{req.socialLinks || 'None provided'}</div>
                       </div>
                     </div>
+
+                    {/* Payment Screenshot Proof Box */}
+                    {req.paymentScreenshotUrl && (
+                      <div className="p-3 rounded-xl bg-[#0B0B0F] border border-white/10 space-y-2">
+                        <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">
+                          Payment Screenshot Proof
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <img 
+                            src={req.paymentScreenshotUrl} 
+                            alt="Payment Screenshot" 
+                            className="w-20 h-20 object-cover rounded-lg border border-white/20 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setInspectImageModal(req.paymentScreenshotUrl || null)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setInspectImageModal(req.paymentScreenshotUrl || null)}
+                            className="px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 flex items-center gap-1.5"
+                          >
+                            <Maximize2 className="w-3.5 h-3.5 text-[#FF7A00]" />
+                            <span>Inspect Screenshot</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2 text-xs">
                       <div>
                         <span className="text-white/40 block font-semibold uppercase text-[10px]">Tournament Experience</span>
-                        <p className="text-white/80 p-3 rounded-xl bg-[#0B0B0F] border border-white/5">{req.experience}</p>
+                        <p className="text-white/80 p-3 rounded-xl bg-[#0B0B0F] border border-white/5">{req.experience || 'Not provided'}</p>
                       </div>
 
                       <div>
                         <span className="text-white/40 block font-semibold uppercase text-[10px]">Reason for Verification</span>
-                        <p className="text-white/80 p-3 rounded-xl bg-[#0B0B0F] border border-white/5">{req.reason}</p>
+                        <p className="text-white/80 p-3 rounded-xl bg-[#0B0B0F] border border-white/5">{req.reason || 'Not provided'}</p>
                       </div>
                     </div>
 
                     {/* Admin Actions for this request */}
-                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
                       {req.status !== 'approved' ? (
                         <button
                           onClick={() => {
                             onApproveVerification(req.id, req.organizerName);
-                            onShowToast('Verification Approved!', `${req.organizerName} is now a Verified Organizer with ✔ badge.`);
+                            onShowToast('Verification Approved!', `${req.organizerName} is now a Verified Organizer with ✔ badge.`, 'success');
                           }}
-                          className="px-5 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-green-500/20"
+                          className="px-6 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-green-500/20"
                         >
                           <Check className="w-4 h-4 stroke-[3]" />
-                          Approve Verification
+                          <span>Approve & Grant Verified Badge</span>
                         </button>
                       ) : (
                         <button
@@ -600,11 +765,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <button
                           onClick={() => {
                             onRejectVerification(req.id);
-                            onShowToast('Verification Rejected', `Request rejected for ${req.organizerName}`);
+                            onShowToast('Verification Rejected', `Request rejected for ${req.organizerName}`, 'info');
                           }}
                           className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-colors"
                         >
-                          Reject Request
+                          Reject Application
                         </button>
                       )}
                     </div>
@@ -872,6 +1037,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </button>
           </div>
         </form>
+      )}
+
+      {/* Inspect Payment Screenshot Modal */}
+      {inspectImageModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn"
+          onClick={() => setInspectImageModal(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] p-2 bg-[#16161D] rounded-2xl border border-white/20 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between px-3 pt-2">
+              <span className="text-xs font-bold text-[#FF7A00] uppercase tracking-wider">Payment Screenshot Inspection</span>
+              <button 
+                onClick={() => setInspectImageModal(null)}
+                className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <img 
+              src={inspectImageModal} 
+              alt="Payment Proof Fullscreen" 
+              className="max-h-[80vh] w-auto object-contain rounded-xl mx-auto"
+            />
+          </div>
+        </div>
       )}
 
     </div>

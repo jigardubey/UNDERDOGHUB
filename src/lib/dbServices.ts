@@ -9,7 +9,7 @@ import {
   onSnapshot,
   addDoc
 } from './firebase';
-import { Tournament, VerificationRequest, CustomMatch, UserProfile, ActivityLog } from '../types';
+import { Tournament, VerificationRequest, CustomMatch, UserProfile, ActivityLog, PaymentSettings } from '../types';
 
 // Collection references
 const TOURNAMENTS_COL = 'tournaments';
@@ -106,9 +106,9 @@ export async function saveVerificationRequestToDb(request: VerificationRequest):
 }
 
 /**
- * 3. GLOBAL SETTINGS FIRESTORE SYNC (Fee, Admin Passcode)
+ * 3. GLOBAL SETTINGS FIRESTORE SYNC (Fee, PaymentSettings, Admin Passcode)
  */
-export function subscribeSettingsDb(onUpdate: (data: { verificationFee?: number; adminPasscode?: string }) => void) {
+export function subscribeSettingsDb(onUpdate: (data: { verificationFee?: number; adminPasscode?: string; paymentSettings?: Partial<PaymentSettings> }) => void) {
   try {
     const docRef = doc(db, SETTINGS_COL, 'global');
     return onSnapshot(
@@ -127,7 +127,7 @@ export function subscribeSettingsDb(onUpdate: (data: { verificationFee?: number;
   }
 }
 
-export async function saveSettingsToDb(data: { verificationFee?: number; adminPasscode?: string }): Promise<boolean> {
+export async function saveSettingsToDb(data: { verificationFee?: number; adminPasscode?: string; paymentSettings?: Partial<PaymentSettings> }): Promise<boolean> {
   try {
     const docRef = doc(db, SETTINGS_COL, 'global');
     await setDoc(docRef, data, { merge: true });

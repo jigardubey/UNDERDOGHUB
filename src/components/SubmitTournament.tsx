@@ -1,33 +1,27 @@
 import React, { useState } from 'react';
-import { MatchFormat, Tournament } from '../types';
-import { PlusCircle, Image, CheckCircle, ShieldAlert, Sparkles, Clock, AlertCircle } from 'lucide-react';
+import { MatchFormat, Tournament, PaymentSettings } from '../types';
+import { PlusCircle, Image as ImageIcon, CheckCircle, Clock, AlertCircle, Upload, X, ShieldCheck, Sparkles } from 'lucide-react';
+import { DEFAULT_UNDERDOG_BANNER } from '../lib/constants';
 
 interface SubmitTournamentProps {
   onSubmitTournament: (newTournament: Omit<Tournament, 'id' | 'slotsFilled' | 'isVerified'>) => void;
   pendingSubmissions: Tournament[];
   onOpenVerificationModal?: () => void;
-  verificationFee?: number;
+  paymentSettings?: PaymentSettings;
   onShowToast: (title: string, message: string, type?: 'success' | 'info' | 'error') => void;
 }
-
-const PRESET_BANNERS = [
-  { id: '1', name: 'Esports Arena Neon', url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop' },
-  { id: '2', name: 'Battle Royale Night', url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1200&auto=format&fit=crop' },
-  { id: '3', name: 'Championship Stage', url: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1200&auto=format&fit=crop' },
-  { id: '4', name: 'Tactical Firestorm', url: 'https://images.unsplash.com/photo-1560253023-3ec5d502959f?q=80&w=1200&auto=format&fit=crop' },
-];
 
 export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
   onSubmitTournament,
   pendingSubmissions,
   onOpenVerificationModal,
-  verificationFee = 499,
+  paymentSettings,
   onShowToast
 }) => {
   const [form, setForm] = useState({
     name: '',
     organizer: '',
-    bannerUrl: PRESET_BANNERS[0].url,
+    bannerUrl: '',
     startDate: new Date().toISOString().split('T')[0],
     startTime: '18:00 IST',
     prizePool: '₹25,000',
@@ -39,7 +33,48 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
     slotsTotal: 48
   });
 
+  const [customBannerPreview, setCustomBannerPreview] = useState<string>('');
+  const [bannerError, setBannerError] = useState<string>('');
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
+
+  const currentFee = paymentSettings
+    ? (paymentSettings.isLaunchOfferEnabled ? paymentSettings.launchFee : paymentSettings.regularFee)
+    : 49;
+
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBannerError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate JPG, PNG, WEBP
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setBannerError('Only JPG, PNG, and WEBP images are allowed.');
+      onShowToast('Invalid Banner File', 'Please upload a JPG, PNG, or WEBP image file.', 'error');
+      return;
+    }
+
+    // Size check max 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      setBannerError('Image file size exceeds 5MB.');
+      onShowToast('File Too Large', 'Banner image must be under 5MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setCustomBannerPreview(reader.result);
+        setForm(prev => ({ ...prev, bannerUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveBanner = () => {
+    setCustomBannerPreview('');
+    setForm(prev => ({ ...prev, bannerUrl: '' }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +100,6 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
       return;
     }
 
-    // Check custom image file format if user typed a custom URL
-    if (form.bannerUrl && !PRESET_BANNERS.some(b => b.url === form.bannerUrl)) {
-      const lower = form.bannerUrl.toLowerCase();
-      if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
-        onShowToast('Invalid Banner Image', 'Banner URL must start with http:// or https://', 'error');
-        return;
-      }
-    }
-
     // Duplicate submission prevention
     const isDuplicate = pendingSubmissions.some(
       (t) => t.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
@@ -90,10 +116,12 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
       .map((r) => r.trim())
       .filter((r) => r.length > 0);
 
+    const finalBannerUrl = form.bannerUrl.trim() || DEFAULT_UNDERDOG_BANNER;
+
     onSubmitTournament({
       name: trimmedName,
       organizer: trimmedOrganizer,
-      bannerUrl: form.bannerUrl,
+      bannerUrl: finalBannerUrl,
       status: 'upcoming',
       startDate: form.startDate,
       startTime: form.startTime,
@@ -125,7 +153,7 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
           Submit Your Free Fire Tournament
         </h1>
         <p className="text-sm text-gray-300 max-w-xl mx-auto">
-          Host scrims, community leagues, or major cups? Submit your tournament details below. Once verified by admins, it will go live for 15,000+ players.
+          Host scrims, community leagues, or custom rooms? Submit your tournament details below for live listing.
         </p>
       </div>
 
@@ -134,14 +162,16 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
         <div className="p-6 rounded-2xl bg-[#16161D] border border-[#FF7A00]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center text-[#FF7A00] shrink-0">
-              <CheckCircle className="w-6 h-6 stroke-[2.5]" />
+              <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white font-[#Sora]">Want a Verified Organizer Badge?</h3>
+                <h3 className="text-base font-bold text-white font-[#Sora]">Verified Organizer Badge</h3>
                 <span className="px-2 py-0.5 rounded bg-[#FF7A00]/20 text-[#FF7A00] text-[10px] font-black uppercase border border-[#FF7A00]/30">✔ VERIFIED</span>
               </div>
-              <p className="text-xs text-white/60">Get official trust mark, priority listing, and instant automated approvals for ₹{verificationFee}</p>
+              <p className="text-xs text-white/60">
+                Get official trust mark & priority listing. Special Launch Offer: <strong className="text-white line-through">₹199</strong> <strong className="text-[#FF7A00]">₹{currentFee}</strong>
+              </p>
             </div>
           </div>
           <button
@@ -159,7 +189,7 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
           <CheckCircle className="w-12 h-12 text-[#FF7A00] mx-auto" />
           <h3 className="text-xl font-bold text-white font-[#Sora]">Submission Received!</h3>
           <p className="text-xs text-gray-300 max-w-md mx-auto">
-            Your tournament has been added to the pending verification queue. You can submit another or check admin approval status below.
+            Your tournament has been added to the pending approval queue. Once verified by admin, it will go live for players.
           </p>
           <button
             onClick={() => setSubmittedSuccess(false)}
@@ -203,35 +233,62 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
             />
           </div>
 
-          {/* Banner Preset Selector */}
+          {/* Upload Custom Tournament Banner */}
           <div className="sm:col-span-2 space-y-2">
-            <label className="block text-xs font-semibold text-gray-300">Tournament Banner Image</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {PRESET_BANNERS.map((preset) => (
-                <div
-                  key={preset.id}
-                  onClick={() => setForm({ ...form, bannerUrl: preset.url })}
-                  className={`relative h-24 rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
-                    form.bannerUrl === preset.url ? 'border-[#FF7A00] scale-[1.02]' : 'border-white/10 opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <img src={preset.url} alt={preset.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-end p-1.5">
-                    <span className="text-[10px] font-bold text-white truncate">{preset.name}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <label className="block text-xs font-semibold text-gray-300">
+              Upload Custom Tournament Banner (JPG, PNG, WEBP)
+            </label>
 
-            <div className="pt-2">
-              <input
-                type="text"
-                placeholder="Or paste custom Banner Image URL (https://...)"
-                value={form.bannerUrl}
-                onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-xs focus:outline-none focus:border-[#FF7A00]"
-              />
-            </div>
+            {customBannerPreview || form.bannerUrl ? (
+              <div className="relative rounded-2xl overflow-hidden border border-[#FF7A00]/50 h-48 bg-[#0B0B0F]">
+                <img 
+                  src={customBannerPreview || form.bannerUrl} 
+                  alt="Tournament Banner Preview" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 flex items-between p-3 flex-col justify-between">
+                  <div className="flex justify-between items-center">
+                    <span className="px-2.5 py-1 rounded-full bg-black/60 text-[#FF7A00] text-[10px] font-bold border border-[#FF7A00]/40 uppercase tracking-widest backdrop-blur-md">
+                      Banner Preview
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveBanner}
+                      className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                      title="Remove custom banner"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="text-xs text-white/70 font-mono">
+                    Custom image attached
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <label className="relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/15 hover:border-[#FF7A00] rounded-2xl bg-[#0B0B0F] cursor-pointer transition-colors group">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleBannerFileChange}
+                  className="sr-only"
+                />
+                <Upload className="w-8 h-8 text-white/40 group-hover:text-[#FF7A00] mb-2 transition-colors" />
+                <span className="text-xs font-bold text-white mb-1">Click to upload Custom Tournament Banner</span>
+                <span className="text-[10px] text-white/40">Supported formats: JPG, PNG, WEBP (Max 5MB)</span>
+              </label>
+            )}
+
+            {bannerError && (
+              <p className="text-xs text-red-400 font-semibold flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{bannerError}</span>
+              </p>
+            )}
+
+            <p className="text-[11px] text-white/40 italic">
+              * If no banner is uploaded, a clean UNDERDOG HUB default placeholder banner will be used.
+            </p>
           </div>
 
           <div>

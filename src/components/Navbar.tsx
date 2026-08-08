@@ -42,12 +42,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'submit', label: 'Submit Tournament' },
   ];
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' && isAdminAuthenticated) {
     navItems.push({ id: 'admin', label: 'Admin Panel', badge: 0 });
+  } else {
+    navItems.push({ id: 'admin-passcode', label: 'Private Admin', badge: 0 });
   }
 
   const handleNavClick = (id: string) => {
-    setActiveTab(id);
+    if (id === 'admin-passcode') {
+      handleAdminButtonClick();
+    } else {
+      setActiveTab(id);
+    }
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -139,12 +145,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
             <button
-              onClick={onToggleAdminRole}
+              onClick={handleAdminButtonClick}
               className={`p-2 rounded-lg text-xs font-semibold border ${
-                user.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-white/5 text-gray-300 border-white/10'
+                isAdminAuthenticated && user.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-white/5 text-gray-300 border-white/10'
               }`}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 text-[#FF7A00]" />
             </button>
 
             <button

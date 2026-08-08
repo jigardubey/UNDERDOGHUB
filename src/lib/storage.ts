@@ -1,5 +1,6 @@
-import { Tournament, CustomMatch, UserProfile, VerificationRequest } from '../types';
+import { Tournament, CustomMatch, UserProfile, VerificationRequest, PaymentSettings } from '../types';
 import { INITIAL_TOURNAMENTS } from '../data/mockTournaments';
+import { DEFAULT_PAYMENT_SETTINGS } from './constants';
 
 const TOURNAMENTS_KEY = 'underdog_tournaments_v1';
 const SAVED_IDS_KEY = 'underdog_saved_ids_v1';
@@ -7,6 +8,7 @@ const CUSTOM_MATCHES_KEY = 'underdog_custom_matches_v1';
 const USER_PROFILE_KEY = 'underdog_user_profile_v1';
 const VERIFICATION_REQUESTS_KEY = 'underdog_verification_requests_v1';
 const VERIFICATION_FEE_KEY = 'underdog_verification_fee_v1';
+const PAYMENT_SETTINGS_KEY = 'underdog_payment_settings_v1';
 
 export function getStoredTournaments(): Tournament[] {
   try {
@@ -111,12 +113,30 @@ export function saveAdminPasscode(passcode: string): void {
   }
 }
 
+export function getPaymentSettings(): PaymentSettings {
+  try {
+    const raw = localStorage.getItem(PAYMENT_SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_PAYMENT_SETTINGS, ...JSON.parse(raw) };
+  } catch (e) {
+    console.error('Failed to parse payment settings:', e);
+  }
+  return DEFAULT_PAYMENT_SETTINGS;
+}
+
+export function savePaymentSettings(settings: PaymentSettings): void {
+  try {
+    localStorage.setItem(PAYMENT_SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error('Failed to save payment settings:', e);
+  }
+}
+
 export function getVerificationFee(): number {
   try {
-    const raw = localStorage.getItem(VERIFICATION_FEE_KEY);
-    return raw ? parseInt(raw, 10) : 499;
+    const settings = getPaymentSettings();
+    return settings.isLaunchOfferEnabled ? settings.launchFee : settings.regularFee;
   } catch {
-    return 499;
+    return 49;
   }
 }
 

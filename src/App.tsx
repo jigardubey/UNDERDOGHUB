@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tournament, CustomMatch, UserProfile, VerificationRequest } from './types';
+import { Tournament, CustomMatch, UserProfile, VerificationRequest, PaymentSettings } from './types';
 import {
   getStoredTournaments,
   saveStoredTournaments,
@@ -14,7 +14,9 @@ import {
   getVerificationRequests,
   saveVerificationRequests,
   getVerificationFee,
-  saveVerificationFee
+  saveVerificationFee,
+  getPaymentSettings,
+  savePaymentSettings
 } from './lib/storage';
 
 import {
@@ -68,8 +70,9 @@ export default function App() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Verification System State
+  // Verification & Payment System State
   const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>(getVerificationRequests);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(getPaymentSettings);
   const [verificationFee, setVerificationFee] = useState<number>(getVerificationFee);
 
   // Private Admin Security State
@@ -138,7 +141,7 @@ export default function App() {
       }
     });
 
-    // Subscribe to Settings Collection (Fee & Admin Passcode)
+    // Subscribe to Settings Collection (Fee, Payment Settings, & Admin Passcode)
     const unsubSettings = subscribeSettingsDb((data) => {
       if (data.verificationFee) {
         setVerificationFee(data.verificationFee);
@@ -147,6 +150,13 @@ export default function App() {
       if (data.adminPasscode) {
         setAdminPasscode(data.adminPasscode);
         saveAdminPasscode(data.adminPasscode);
+      }
+      if (data.paymentSettings) {
+        setPaymentSettings(prev => {
+          const updated = { ...prev, ...data.paymentSettings };
+          savePaymentSettings(updated);
+          return updated;
+        });
       }
     });
 
@@ -271,6 +281,13 @@ export default function App() {
     saveSettingsToDb({ verificationFee: newFee });
     logActivityToDb('CHANGE_FEE', `Verification fee changed to ₹${newFee}`, firebaseUser?.uid, user.email);
     addToast('Verification Fee Updated', `New badge verification fee set to ₹${newFee}`);
+  };
+
+  const handleUpdatePaymentSettings = (newSettings: PaymentSettings) => {
+    setPaymentSettings(newSettings);
+    savePaymentSettings(newSettings);
+    saveSettingsToDb({ paymentSettings: newSettings });
+    logActivityToDb('UPDATE_PAYMENT_SETTINGS', 'Admin updated payment QR & UPI settings', firebaseUser?.uid, user.email);
   };
 
   // Custom Match Handlers
@@ -486,8 +503,15 @@ export default function App() {
                 setActiveTab('tournaments');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onOpenVerificationModal={() => setShowVerificationModal(true)}
-              verificationFee={verificationFee}
+              onSubmit={() => {
+                if (!firebaseUser) {
+                  setShowAuthModal(true);
+                  addToast('Authentication Required', 'Please sign in or register to submit your tournament.', 'info');
+                } else {
+                  setActiveTab('submit');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
             />
 
             {/* SECTION 1: LIVE TOURNAMENTS */}
@@ -658,6 +682,7 @@ export default function App() {
             tournaments={tournaments}
             verificationRequests={verificationRequests}
             verificationFee={verificationFee}
+            paymentSettings={paymentSettings}
             isAdminAuthenticated={isAdminAuthenticated}
             onVerifyPasscode={handleVerifyAdminPasscode}
             onLockAdminSession={handleLockAdminSession}
@@ -672,6 +697,7 @@ export default function App() {
             onRejectVerification={handleRejectVerification}
             onRemoveVerification={handleRemoveVerification}
             onChangeVerificationFee={handleChangeVerificationFee}
+            onUpdatePaymentSettings={handleUpdatePaymentSettings}
             onShowToast={addToast}
           />
         )}
@@ -720,7 +746,8 @@ export default function App() {
         <AdminPasscodeModal
           isOpen={showAdminPasscodeModal}
           onClose={() => setShowAdminPasscodeModal(false)}
-          onVerify={handleVerifyAdminPasscode}
+          onVerifyPasscode={handleVerifyAdminPasscode}
+          onShowToast={addToast}
           onSuccess={() => {
             setShowAdminPasscodeModal(false);
             setActiveTab('admin');
@@ -733,6 +760,7 @@ export default function App() {
           isOpen={showVerificationModal}
           onClose={() => setShowVerificationModal(false)}
           verificationFee={verificationFee}
+          paymentSettings={paymentSettings}
           onSubmitApplication={handleSubmitVerification}
           onShowToast={addToast}
           existingStatus={

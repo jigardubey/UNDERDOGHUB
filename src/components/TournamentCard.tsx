@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tournament } from '../types';
 import { CheckCircle2, Calendar, Clock, Trophy, Ticket, Bookmark, ExternalLink, Users, Shield } from 'lucide-react';
+import { DEFAULT_UNDERDOG_BANNER } from '../lib/constants';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -72,7 +73,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop';
+            e.currentTarget.src = DEFAULT_UNDERDOG_BANNER;
           }}
         />
         

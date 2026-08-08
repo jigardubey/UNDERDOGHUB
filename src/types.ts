@@ -60,17 +60,28 @@ export interface ActivityLog {
 
 export interface VerificationRequest {
   id: string;
+  applicantUid?: string;
   organizerName: string;
   email: string;
   phone: string;
-  socialLinks: string;
-  experience: string;
-  reason: string;
+  socialLinks?: string;
+  experience?: string;
+  reason?: string;
   feePaid: number;
-  paymentStatus: 'completed' | 'pending';
+  paymentScreenshotUrl?: string;
+  utrNumber: string;
+  paymentStatus: 'pending' | 'completed' | 'rejected';
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   reviewedAt?: string;
+}
+
+export interface PaymentSettings {
+  upiId: string;
+  qrCodeUrl?: string;
+  regularFee: number;
+  launchFee: number;
+  isLaunchOfferEnabled: boolean;
 }
 
 export interface FilterState {
