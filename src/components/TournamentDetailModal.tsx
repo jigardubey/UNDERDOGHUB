@@ -253,23 +253,31 @@ export const TournamentDetailModal: React.FC<TournamentDetailModalProps> = ({
               {/* Tournament Specs Specs Box */}
               <div className="bg-[#141622] rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
                 <div className="px-4 py-3 bg-white/5 font-bold text-white text-xs uppercase tracking-wider">
-                  Tournament Specs
+                  Tournament Schedule & Specs
+                </div>
+                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
+                  <span className="text-gray-400">Registration Start</span>
+                  <span className="font-semibold text-[#FF7A00]">{tournament.registrationStartDate || tournament.startDate}</span>
+                </div>
+                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
+                  <span className="text-gray-400">Registration End</span>
+                  <span className="font-semibold text-[#FF7A00]">{tournament.registrationEndDate || tournament.registrationCloseDate || tournament.startDate}</span>
+                </div>
+                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
+                  <span className="text-gray-400">Match Start Date</span>
+                  <span className="font-semibold text-blue-400">{tournament.matchStartDate || tournament.startDate} ({tournament.startTime})</span>
+                </div>
+                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
+                  <span className="text-gray-400">Match End Date</span>
+                  <span className="font-semibold text-blue-400">{tournament.matchEndDate || tournament.matchStartDate || tournament.startDate}</span>
                 </div>
                 <div className="px-4 py-2.5 flex justify-between items-center text-xs">
                   <span className="text-gray-400">Game version</span>
                   <span className="font-semibold text-white">{tournament.gameVersion || '1.0 MAX'}</span>
                 </div>
                 <div className="px-4 py-2.5 flex justify-between items-center text-xs">
-                  <span className="text-gray-400">Game mode</span>
-                  <span className="font-semibold text-white">{tournament.gameMode || 'online'}</span>
-                </div>
-                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
                   <span className="text-gray-400">Location</span>
                   <span className="font-semibold text-white">{tournament.location || 'India'}</span>
-                </div>
-                <div className="px-4 py-2.5 flex justify-between items-center text-xs">
-                  <span className="text-gray-400">End Date</span>
-                  <span className="font-semibold text-white">{tournament.startDate}</span>
                 </div>
               </div>
 
@@ -289,24 +297,30 @@ export const TournamentDetailModal: React.FC<TournamentDetailModalProps> = ({
 
               {/* Tournament Phases Timeline */}
               <div className="bg-[#141622] p-4 rounded-2xl border border-white/10 space-y-3">
-                <h3 className="font-extrabold text-white text-xs uppercase tracking-wider">Tournament Phases</h3>
+                <h3 className="font-extrabold text-white text-xs uppercase tracking-wider">Tournament Timeline</h3>
                 <div className="relative pl-6 space-y-4 border-l-2 border-blue-600/30">
                   <div className="relative">
                     <span className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-[#141622]" />
-                    <div className="text-xs font-bold text-white">Registration Start Date</div>
-                    <div className="text-[10px] text-gray-400">{tournament.startDate}, 14:00 IST</div>
+                    <div className="text-xs font-bold text-white">Registration Opens</div>
+                    <div className="text-[10px] text-gray-400">{tournament.registrationStartDate || tournament.startDate}</div>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-[#141622]" />
+                    <div className="text-xs font-bold text-white">Registration Closes</div>
+                    <div className="text-[10px] text-gray-400">{tournament.registrationEndDate || tournament.registrationCloseDate || tournament.startDate}</div>
                   </div>
 
                   <div className="relative">
                     <span className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-[#141622]" />
-                    <div className="text-xs font-bold text-white">Registration Close Date</div>
-                    <div className="text-[10px] text-gray-400">{tournament.registrationCloseDate || tournament.startDate}, 19:00 IST</div>
+                    <div className="text-xs font-bold text-white">Match Start Date</div>
+                    <div className="text-[10px] text-blue-400 font-semibold">{tournament.matchStartDate || tournament.startDate} at {tournament.startTime}</div>
                   </div>
 
                   <div className="relative">
-                    <span className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-gray-500 ring-4 ring-[#141622]" />
-                    <div className="text-xs font-bold text-white">Tournament Finished</div>
-                    <div className="text-[10px] text-gray-400">Post Match Results Published</div>
+                    <span className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-[#141622]" />
+                    <div className="text-xs font-bold text-white">Match End Date</div>
+                    <div className="text-[10px] text-purple-300 font-semibold">{tournament.matchEndDate || tournament.matchStartDate || tournament.startDate}</div>
                   </div>
                 </div>
               </div>

@@ -24,6 +24,10 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
     bannerUrl: '',
     startDate: new Date().toISOString().split('T')[0],
     startTime: '18:00 IST',
+    registrationStartDate: new Date().toISOString().split('T')[0],
+    registrationEndDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+    matchStartDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+    matchEndDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     prizePool: '₹25,000',
     entryFee: 'Free',
     registrationUrl: '',
@@ -123,8 +127,13 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
       organizer: trimmedOrganizer,
       bannerUrl: finalBannerUrl,
       status: 'upcoming',
-      startDate: form.startDate,
+      startDate: form.matchStartDate || form.startDate,
       startTime: form.startTime,
+      registrationStartDate: form.registrationStartDate,
+      registrationEndDate: form.registrationEndDate,
+      registrationCloseDate: form.registrationEndDate,
+      matchStartDate: form.matchStartDate,
+      matchEndDate: form.matchEndDate,
       prizePool: form.prizePool,
       entryFee: form.entryFee,
       registrationUrl: trimmedRegUrl,
@@ -338,19 +347,63 @@ export const SubmitTournament: React.FC<SubmitTournamentProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Start Date *</label>
-            <input
-              type="date"
-              required
-              value={form.startDate}
-              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-sm focus:outline-none focus:border-[#FF7A00]"
-            />
+          {/* Registration & Match Dates Grid */}
+          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#0B0B0F] border border-white/10">
+            <div>
+              <label className="block text-[11px] font-bold text-[#FF7A00] uppercase tracking-wider mb-1">
+                Registration Start Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={form.registrationStartDate}
+                onChange={(e) => setForm({ ...form, registrationStartDate: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-[#FF7A00]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[#FF7A00] uppercase tracking-wider mb-1">
+                Registration End Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={form.registrationEndDate}
+                onChange={(e) => setForm({ ...form, registrationEndDate: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-[#FF7A00]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">
+                Match Start Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={form.matchStartDate}
+                onChange={(e) => setForm({ ...form, matchStartDate: e.target.value, startDate: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">
+                Match End Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={form.matchEndDate}
+                onChange={(e) => setForm({ ...form, matchEndDate: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Start Time *</label>
+            <label className="block text-xs font-semibold text-gray-300 mb-1">Match Start Time *</label>
             <input
               type="text"
               required

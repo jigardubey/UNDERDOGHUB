@@ -213,6 +213,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     status: 'upcoming',
     startDate: new Date().toISOString().split('T')[0],
     startTime: '18:00 IST',
+    registrationStartDate: new Date().toISOString().split('T')[0],
+    registrationEndDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+    matchStartDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+    matchEndDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     prizePool: '₹1,00,000',
     entryFee: 'Free',
     registrationUrl: 'https://underdoghub.gg/register',
@@ -225,7 +229,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleEditClick = (t: Tournament) => {
     setEditingTournament(t);
-    setForm(t);
+    setForm({
+      ...t,
+      registrationStartDate: t.registrationStartDate || t.startDate,
+      registrationEndDate: t.registrationEndDate || t.registrationCloseDate || t.startDate,
+      matchStartDate: t.matchStartDate || t.startDate,
+      matchEndDate: t.matchEndDate || t.startDate,
+    });
     setAdminTab('create');
   };
 
@@ -236,6 +246,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
+    const regStart = form.registrationStartDate || form.startDate || new Date().toISOString().split('T')[0];
+    const regEnd = form.registrationEndDate || form.startDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+    const mStart = form.matchStartDate || form.startDate || new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0];
+    const mEnd = form.matchEndDate || mStart;
+
     const tournamentToSave: Tournament = {
       id: editingTournament ? editingTournament.id : `official-${Date.now()}`,
       name: form.name || 'Official Cup',
@@ -243,8 +258,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       isVerified: form.isVerified ?? true,
       bannerUrl: form.bannerUrl || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop',
       status: form.status || 'upcoming',
-      startDate: form.startDate || new Date().toISOString().split('T')[0],
+      startDate: mStart,
       startTime: form.startTime || '18:00 IST',
+      registrationStartDate: regStart,
+      registrationEndDate: regEnd,
+      registrationCloseDate: regEnd,
+      matchStartDate: mStart,
+      matchEndDate: mEnd,
       prizePool: form.prizePool || '₹50,000',
       entryFee: form.entryFee || 'Free',
       registrationUrl: form.registrationUrl || 'https://underdoghub.gg',
@@ -948,6 +968,68 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 required
                 value={form.organizer || ''}
                 onChange={(e) => setForm({ ...form, organizer: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-sm focus:outline-none focus:border-[#FF7A00]"
+              />
+            </div>
+
+            {/* Dates Grid */}
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#0B0B0F] border border-white/10">
+              <div>
+                <label className="block text-[11px] font-bold text-[#FF7A00] uppercase tracking-wider mb-1">
+                  Reg. Start Date
+                </label>
+                <input
+                  type="date"
+                  value={form.registrationStartDate || ''}
+                  onChange={(e) => setForm({ ...form, registrationStartDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-[#FF7A00]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#FF7A00] uppercase tracking-wider mb-1">
+                  Reg. End Date
+                </label>
+                <input
+                  type="date"
+                  value={form.registrationEndDate || ''}
+                  onChange={(e) => setForm({ ...form, registrationEndDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-[#FF7A00]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">
+                  Match Start Date
+                </label>
+                <input
+                  type="date"
+                  value={form.matchStartDate || ''}
+                  onChange={(e) => setForm({ ...form, matchStartDate: e.target.value, startDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">
+                  Match End Date
+                </label>
+                <input
+                  type="date"
+                  value={form.matchEndDate || ''}
+                  onChange={(e) => setForm({ ...form, matchEndDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#16161D] border border-white/10 text-white text-xs focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-1">Match Start Time</label>
+              <input
+                type="text"
+                placeholder="e.g. 18:00 IST"
+                value={form.startTime || ''}
+                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl bg-[#0B0B0F] border border-white/10 text-white text-sm focus:outline-none focus:border-[#FF7A00]"
               />
             </div>

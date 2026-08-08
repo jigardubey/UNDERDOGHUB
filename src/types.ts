@@ -25,6 +25,10 @@ export interface Tournament {
   submittedAt?: string;
   championName?: string;
   registrationCloseDate?: string;
+  registrationStartDate?: string;
+  registrationEndDate?: string;
+  matchStartDate?: string;
+  matchEndDate?: string;
   gameVersion?: string;
   gameMode?: string;
   location?: string;
